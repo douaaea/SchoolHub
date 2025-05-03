@@ -20,7 +20,7 @@ public class Subject {
 
     private String name;
 
-    @ManyToOne
+    @ManyToOne// Ensure this is set to EAGER to fetch the level data
     @JoinColumn(name = "level_id")
     @JsonIgnoreProperties({"subjects", "groups", "students"})
     private Level level;

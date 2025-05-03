@@ -83,12 +83,31 @@
         <artifactId>hibernate-core</artifactId>
         <version>6.0.0.Final</version> <!-- Compatible with Spring Boot 3.x -->
     </dependency>
-    <dependency>
+   <dependency>
     <groupId>io.springfox</groupId>
-    <artifactId>springfox-boot-starter</artifactId>
+    <artifactId>springfox-swagger2</artifactId>
+    <version>3.0.0</version>
+</dependency>
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger-ui</artifactId>
     <version>3.0.0</version>
 </dependency>
 
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version>
+    <scope>provided</scope>
+</dependency>
+
+
+
+  <dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>28.0-jre</version>
+  </dependency>
 
   <dependency>
     <groupId>com.google.guava</groupId>

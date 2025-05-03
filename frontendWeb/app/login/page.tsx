@@ -11,57 +11,47 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ModeToggle } from "@/components/mode-toggle"
-import { loginUser } from "@/lib/api"; // Adjust path as needed
 
 export default function LoginPage() {
   const router = useRouter()
-  const [userRole, setUserRole] = useState("student")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
   
     try {
-      const response = await fetch("http://localhost:8080/api/users/login", {
+      const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      })
+        body: JSON.stringify({ email, password }),
+      });
   
       if (!response.ok) {
-        const errorText = await response.text()
-        alert("Login failed: " + errorText)
-        return
+        const errorText = await response.text();
+        alert("Login failed: " + errorText);
+        return;
       }
   
-      const userData = await response.json()
+      const userData = await response.json();
+      console.log("Login success:", userData);
   
-      // Optional: Save the user info to localStorage or state
-      // localStorage.setItem("user", JSON.stringify(userData))
-  
-      // Navigate based on user role
       if (userData.role === "student") {
-        router.push("/dashboard/student")
+        router.push("/dashboard/student");
       } else if (userData.role === "teacher") {
-        router.push("/dashboard/teacher")
+        router.push("/dashboard/teacher");
       } else if (userData.role === "admin") {
-        router.push("/dashboard/admin")
+        router.push("/dashboard/admin");
       } else {
-        alert("Unknown role. Cannot navigate.")
+        alert("Unknown role. Cannot navigate.");
       }
-  
     } catch (error) {
-      console.error("Login error:", error)
-      alert("An error occurred. Please try again later.")
+      console.error("Login error:", error);
+      alert("An error occurred. Please try again later.");
     }
-  }
-  
+  };
   
   return (
     <div className="flex min-h-screen flex-col">
@@ -88,7 +78,7 @@ export default function LoginPage() {
       </header>
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleLogin}>
             <CardHeader>
               <CardTitle className="text-2xl">Login to ScholarHub</CardTitle>
               <CardDescription>Enter your credentials to access your dashboard</CardDescription>
@@ -115,28 +105,7 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label>I am a:</Label>
-                <RadioGroup
-                  defaultValue="student"
-                  value={userRole}
-                  onValueChange={setUserRole}
-                  className="flex space-x-2"
-                >
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="student" id="student" />
-                    <Label htmlFor="student">Student</Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="teacher" id="teacher" />
-                    <Label htmlFor="teacher">Teacher</Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="admin" id="admin" />
-                    <Label htmlFor="admin">Admin</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+           
             </CardContent>
             <CardFooter className="flex flex-col space-y-2">
               <Button type="submit" className="w-full">

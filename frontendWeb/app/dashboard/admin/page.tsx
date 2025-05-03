@@ -272,13 +272,13 @@ export default function AdminDashboard() {
               <Link href="/dashboard/admin/teachers/new">
                 <Button>
                   <BookOpen className="mr-2 h-4 w-4" />
-                  Add Teacher
+                  Manage Teachers 
                 </Button>
               </Link>
               <Link href="/dashboard/admin/students/new">
                 <Button>
                   <Users className="mr-2 h-4 w-4" />
-                  Add Student
+                  Manage Students
                 </Button>
               </Link>
               <Link href="/dashboard/admin/classes">

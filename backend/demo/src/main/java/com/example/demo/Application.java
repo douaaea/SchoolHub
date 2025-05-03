@@ -28,7 +28,6 @@ import org.springframework.context.annotation.Bean;
 
 
 @SpringBootApplication
-@springfox.documentation.oas.annotations.EnableOpenApi
 @EntityScan(basePackages = "com.example.demo")
 public class Application {
     public static void main(String[] args) {

@@ -5,5 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SubjectRepository extends JpaRepository<Subject, Long> {
-    // You can add custom query methods if needed
+    // You can add custom query methods if 
 }

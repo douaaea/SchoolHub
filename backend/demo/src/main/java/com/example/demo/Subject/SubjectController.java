@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,11 +23,22 @@ public class SubjectController {
         return new ResponseEntity<>(savedSubject, HttpStatus.CREATED);
     }
 
+       private SubjectDTO convertToDTO(Subject subject) {
+        String levelName = subject.getLevel() != null ? subject.getLevel().getName() : "N/A";
+        return new SubjectDTO(subject.getId(), subject.getName(), levelName);
+    }
+
     // Get all Subjects
     @GetMapping
-    public List<Subject> getAllSubjects() {
-        return subjectRepository.findAll();
+    public List<SubjectDTO> getAllSubjects() {
+        List<Subject> subjects = subjectRepository.findAll();
+        List<SubjectDTO> subjectDTOs = new ArrayList<>();
+        for (Subject subject : subjects) {
+            subjectDTOs.add(convertToDTO(subject));
+        }
+        return subjectDTOs;
     }
+    
 
     // Get Subject by ID
     @GetMapping("/{id}")

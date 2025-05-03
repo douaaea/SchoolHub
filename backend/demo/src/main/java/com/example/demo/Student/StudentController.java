@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.Group.*;
 import com.example.demo.Level.*;
+import com.example.demo.Group.GroupRepository;
+import com.example.demo.Level.LevelRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,10 +18,12 @@ public class StudentController {
     @Autowired
     private StudentRepository studentRepository;
     @Autowired
-private GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
-@Autowired
-private LevelRepository levelRepository;
+    @Autowired
+    private LevelRepository levelRepository;
+
+
 
 
     // Get all students
@@ -38,9 +42,27 @@ private LevelRepository levelRepository;
 
     // Create new student
     @PostMapping
-    public Student createStudent(@RequestBody Student student) {
-        return studentRepository.save(student);
+    public ResponseEntity<Student> createStudent(@RequestBody StudentDTO dto) {
+    Optional<Group> groupOpt = groupRepository.findById(dto.groupId);
+    Optional<Level> levelOpt = levelRepository.findById(dto.levelId);
+
+    if (groupOpt.isEmpty() || levelOpt.isEmpty()) {
+        return ResponseEntity.badRequest().build();
     }
+
+    Student student = new Student(
+        dto.email,
+        dto.password,
+        dto.firstname,
+        dto.lastname,
+        levelOpt.get(),
+        groupOpt.get()
+    );
+
+    Student savedStudent = studentRepository.save(student);
+    return ResponseEntity.ok(savedStudent);
+    }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student studentDetails) {
