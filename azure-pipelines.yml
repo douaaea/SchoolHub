@@ -1,0 +1,9 @@
+trigger:
+- main  # Or use 'master' if that's your branch
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo "CI pipeline triggered by GitHub push"
+  displayName: "Run echo"
