@@ -1,4 +1,5 @@
 # 📚 ScholarHub
+[![Build Status](https://dev.azure.com/DouaaAmeziane/ScholarHub/_apis/build/status/douaaea.ScholarHub%20(5)?branchName=main)](https://dev.azure.com/DouaaAmeziane/ScholarHub/_build/latest?definitionId=5&branchName=main)
 
 **ScholarHub** est une application multiplateforme (Web et Mobile) de gestion scolaire. Elle permet aux enseignants de créer et corriger des devoirs, aux élèves de les soumettre et consulter leurs notes, et au principal (administrateur) de gérer l'ensemble de la structure scolaire.
 
