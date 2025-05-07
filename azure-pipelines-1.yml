@@ -1,4 +1,3 @@
-
 trigger:
   branches:
     include:
@@ -26,20 +25,22 @@ stages:
     - job: backend
       displayName: 'Backend Java 21 + Maven'
       steps:
-        - task: UseJava@1
+        - task: JavaToolInstaller@0
           inputs:
             versionSpec: '21'
             jdkArchitecture: 'x64'
+            jdkSourceOption: 'PreInstalled'
+            jdkArchitectureOption: 'x64'
 
         - script: |
             cd $(backendDir)
             ./mvnw clean install
-          displayName: ' Build backend with Maven'
+          displayName: 'Build backend with Maven'
 
         - script: |
             cd $(backendDir)
             ./mvnw test
-          displayName: ' Run backend unit tests'
+          displayName: 'Run backend unit tests'
 
 # --- FRONTEND WEB (React + Next.js) ---
 - stage: Build_Frontend
@@ -75,7 +76,7 @@ stages:
             jdkArchitectureOption: 'x64'
 
         - script: |
-            echo " Accepting Android SDK licenses..."
+            echo "Accepting Android SDK licenses..."
             yes | sdkmanager --licenses || true
           displayName: 'Accept Android SDK licenses'
 
@@ -83,11 +84,11 @@ stages:
             cd $(androidDir)
             chmod +x ./gradlew
             ./gradlew assembleDebug
-          displayName: ' Build Android APK (Debug)'
+          displayName: 'Build Android APK (Debug)'
 
         - task: PublishBuildArtifacts@1
           inputs:
             PathtoPublish: '$(androidDir)/app/build/outputs/apk/debug'
             ArtifactName: 'AndroidAPK'
             publishLocation: 'Container'
-          displayName: ' Publier l’APK Android'
+          displayName: 'Publish Android APK'
