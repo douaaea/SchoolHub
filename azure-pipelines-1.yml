@@ -1,0 +1,93 @@
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  backendDir: 'backend'
+  frontendDir: 'frontendWeb'
+  androidDir: 'frontendMobile'
+
+stages:
+
+# --- BACKEND (Spring Boot) ---
+- stage: Build_Backend
+  displayName: 'Build & Test Spring Boot'
+  jobs:
+    - job: backend
+      displayName: 'Backend Java 21 + Maven'
+      steps:
+        - task: UseJava@1
+          inputs:
+            versionSpec: '21'
+            jdkArchitecture: 'x64'
+
+        - script: |
+            cd $(backendDir)
+            ./mvnw clean install
+          displayName: ' Build backend with Maven'
+
+        - script: |
+            cd $(backendDir)
+            ./mvnw test
+          displayName: ' Run backend unit tests'
+
+# --- FRONTEND WEB (React + Next.js) ---
+- stage: Build_Frontend
+  displayName: 'Build & Test Frontend Web'
+  jobs:
+    - job: frontend
+      displayName: 'Frontend React'
+      steps:
+        - task: NodeTool@0
+          inputs:
+            versionSpec: '18.x'
+
+        - script: |
+            cd $(frontendDir)
+            npm install
+            npm run lint
+            npm run build
+            npm run test -- --watchAll=false
+          displayName: 'React: install, lint, build, test'
+
+# --- ANDROID MOBILE (Java) ---
+- stage: Build_Android
+  displayName: 'Build Android APK'
+  jobs:
+    - job: android
+      displayName: 'Android Build'
+      steps:
+        - task: JavaToolInstaller@0
+          inputs:
+            versionSpec: '17'
+            jdkArchitecture: 'x64'
+            jdkSourceOption: 'PreInstalled'
+            jdkArchitectureOption: 'x64'
+
+        - script: |
+            echo " Accepting Android SDK licenses..."
+            yes | sdkmanager --licenses || true
+          displayName: 'Accept Android SDK licenses'
+
+        - script: |
+            cd $(androidDir)
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          displayName: ' Build Android APK (Debug)'
+
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: '$(androidDir)/app/build/outputs/apk/debug'
+            ArtifactName: 'AndroidAPK'
+            publishLocation: 'Container'
+          displayName: ' Publier l’APK Android'
