@@ -25,24 +25,26 @@ public class Assignment {
 
     private LocalDateTime delay;
 
-    // Many assignments belong to one subject
+    @Column(nullable = false, columnDefinition = "VARCHAR(50) DEFAULT 'Not Started'")
+    private String status = "Not Started";
+
     @ManyToOne
     @JoinColumn(name = "subject_id")
     @JsonIgnoreProperties({"assignments", "teachers", "level", "grades"})
     private Subject subject;
 
-    // One assignment can have many work returns
     @OneToMany(mappedBy = "assignment")
     @JsonIgnoreProperties("assignment")
     private List<WorkReturn> workReturns;
 
-    // Many assignments can be given to one group
     @ManyToOne
     @JoinColumn(name = "group_id")
     @JsonIgnoreProperties({"assignments", "students", "teachers", "level"})
     private Group group;
 
     @ManyToOne
+    @JoinColumn(name = "program_id")
+    @JsonIgnoreProperties({"assignments", "group", "subject", "teacher"})
     private Program program;
 
     public Assignment() {}
@@ -52,6 +54,7 @@ public class Assignment {
         this.description = description;
         this.delay = delay;
         this.subject = subject;
+        this.status = "Not Started"; // Default status
     }
 
     public Assignment(String title, String description, Group group, Subject subject) {
@@ -59,22 +62,23 @@ public class Assignment {
         this.description = description;
         this.group = group;
         this.subject = subject;
+        this.status = "Not Started"; // Default status
     }
+
     public Assignment(String title, String description, Program program) {
         this.title = title;
         this.description = description;
         this.program = program;
-        
+        this.status = "Not Started"; // Default status
     }
-    
 
-    // Getters and setters
+    // Getters and Setters
 
     public Long getId() {
         return id;
     }
     public void setId(Long id) {
-        this.id = id; 
+        this.id = id;
     }
 
     public String getTitle() {
@@ -98,6 +102,13 @@ public class Assignment {
         this.delay = delay;
     }
 
+    public String getStatus() {
+        return status;
+    }
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public Subject getSubject() {
         return subject;
     }
@@ -117,5 +128,12 @@ public class Assignment {
     }
     public void setGroup(Group group) {
         this.group = group;
+    }
+
+    public Program getProgram() {
+        return program;
+    }
+    public void setProgram(Program program) {
+        this.program = program;
     }
 }

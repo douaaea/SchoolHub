@@ -1,19 +1,293 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { BookOpen, GraduationCap, Users, Settings, Bell, School } from "lucide-react"
+import { BookOpen, GraduationCap, Users, Settings, Bell, School, Layers } from "lucide-react"
 import Link from "next/link"
+import { toast } from "@/components/ui/use-toast"
+
+interface SubjectPerformance {
+  subject: string
+  averageGrade: string
+  passingRate: string
+  trend: string
+}
+
+interface Teacher {
+  id: number
+  name: string
+  department: string
+  classes: number
+  students: number
+}
+
+interface Student {
+  id: number
+  name: string
+  level: string
+  group: string
+  gpa: string
+}
+
+const BACKEND_URL = "http://localhost:8080/api"
 
 export default function AdminDashboard() {
+  const [studentCount, setStudentCount] = useState(0)
+  const [teacherCount, setTeacherCount] = useState(0)
+  const [subjectCount, setSubjectCount] = useState(0)
+  const [averageGpa, setAverageGpa] = useState(0)
+  const [subjectPerformance, setSubjectPerformance] = useState<SubjectPerformance[]>([])
+  const [teachers, setTeachers] = useState<Teacher[]>([])
+  const [students, setStudents] = useState<Student[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Convert score (0-100) to GPA (0-4.0)
+  const scoreToGpa = (score: number): number => {
+    if (score >= 90) return 4.0
+    if (score >= 80) return 3.0
+    if (score >= 70) return 2.0
+    if (score >= 60) return 1.0
+    return 0.0
+  }
+
+  // Convert score to letter grade
+  const scoreToLetterGrade = (score: number): string => {
+    if (score >= 90) return "A"
+    if (score >= 80) return "B"
+    if (score >= 70) return "C"
+    if (score >= 60) return "D"
+    return "F"
+  }
+
+  const fetchStudents = async () => {
+    try {
+      console.log(`[DEBUG] Fetching students from ${BACKEND_URL}/students`)
+      const response = await fetch(`${BACKEND_URL}/students`)
+      console.log(`[DEBUG] Students fetch status: ${response.status} ${response.statusText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`[DEBUG] Students fetch error response: ${errorText}`)
+        throw new Error("Failed to fetch students")
+      }
+      const data = await response.json()
+      console.log(`[DEBUG] Students response:`, data)
+      setStudentCount(Array.isArray(data) ? data.length : 0)
+      if (data.length === 0) {
+        console.log(`[DEBUG] No students found`)
+        toast({ title: "No Students", description: "No students found in the system." })
+      }
+    } catch (error) {
+      console.error(`[DEBUG] Error fetching students:`, error)
+      setError(error instanceof Error ? error.message : "Failed to load students")
+      setStudentCount(0)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load students",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const fetchTeachers = async () => {
+    try {
+      console.log(`[DEBUG] Fetching teachers from ${BACKEND_URL}/teachers`)
+      const response = await fetch(`${BACKEND_URL}/teachers`)
+      console.log(`[DEBUG] Teachers fetch status: ${response.status} ${response.statusText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`[DEBUG] Teachers fetch error response: ${errorText}`)
+        throw new Error("Failed to fetch teachers")
+      }
+      const data = await response.json()
+      console.log(`[DEBUG] Teachers response:`, data)
+      const normalizedTeachers = Array.isArray(data)
+        ? data.slice(0, 3).map((teacher: any) => ({
+            id: teacher.id || 0,
+            name: `${teacher.firstname || ""} ${teacher.lastname || ""}`.trim() || "Unknown Teacher",
+            department: teacher.department || "General",
+            classes: teacher.classCount || 0,
+            students: teacher.studentCount || 0,
+          }))
+        : []
+      setTeachers(normalizedTeachers)
+      setTeacherCount(data.length || 0)
+      if (data.length === 0) {
+        console.log(`[DEBUG] No teachers found`)
+        toast({ title: "No Teachers", description: "No teachers found in the system." })
+      }
+    } catch (error) {
+      console.error(`[DEBUG] Error fetching teachers:`, error)
+      setError(error instanceof Error ? error.message : "Failed to load teachers")
+      setTeachers([])
+      setTeacherCount(0)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load teachers",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const fetchSubjects = async () => {
+    try {
+      console.log(`[DEBUG] Fetching subjects from ${BACKEND_URL}/subjects`)
+      const response = await fetch(`${BACKEND_URL}/subjects`)
+      console.log(`[DEBUG] Subjects fetch status: ${response.status} ${response.statusText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`[DEBUG] Subjects fetch error response: ${errorText}`)
+        throw new Error("Failed to fetch subjects")
+      }
+      const data = await response.json()
+      console.log(`[DEBUG] Subjects response:`, data)
+      setSubjectCount(Array.isArray(data) ? data.length : 0)
+      if (data.length === 0) {
+        console.log(`[DEBUG] No subjects found`)
+        toast({ title: "No Subjects", description: "No subjects found in the system." })
+      }
+    } catch (error) {
+      console.error(`[DEBUG] Error fetching subjects:`, error)
+      setError(error instanceof Error ? error.message : "Failed to load subjects")
+      setSubjectCount(0)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load subjects",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const fetchGrades = async () => {
+    try {
+      console.log(`[DEBUG] Fetching grades from ${BACKEND_URL}/grades`)
+      const response = await fetch(`${BACKEND_URL}/grades`)
+      console.log(`[DEBUG] Grades fetch status: ${response.status} ${response.statusText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`[DEBUG] Grades fetch error response: ${errorText}`)
+        throw new Error("Failed to fetch grades")
+      }
+      const data = await response.json()
+      console.log(`[DEBUG] Grades response:`, data)
+      
+      if (Array.isArray(data) && data.length > 0) {
+        const totalScore = data.reduce((sum: number, grade: any) => sum + (grade.score || 0), 0)
+        const avgScore = totalScore / data.length
+        setAverageGpa(scoreToGpa(avgScore))
+      } else {
+        setAverageGpa(0)
+        console.log(`[DEBUG] No grades found`)
+        toast({ title: "No Grades", description: "No grades found in the system." })
+      }
+
+      const subjectMap: { [key: string]: { scores: number[]; name: string } } = {}
+      data.forEach((grade: any) => {
+        const subjectId = grade.subject?.id || 0
+        const subjectName = grade.subject?.name || "Unknown Subject"
+        if (!subjectMap[subjectId]) {
+          subjectMap[subjectId] = { scores: [], name: subjectName }
+        }
+        if (grade.score) {
+          subjectMap[subjectId].scores.push(grade.score)
+        }
+      })
+
+      const performance = Object.values(subjectMap).map((subject) => {
+        const avgScore = subject.scores.length > 0 
+          ? subject.scores.reduce((sum, score) => sum + score, 0) / subject.scores.length 
+          : 0
+        const passingRate = subject.scores.length > 0 
+          ? ((subject.scores.filter((score) => score >= 60).length / subject.scores.length) * 100).toFixed(0) + "%"
+          : "0%"
+        return {
+          subject: subject.name,
+          averageGrade: scoreToLetterGrade(avgScore),
+          passingRate,
+          trend: "0%",
+        }
+      })
+      setSubjectPerformance(performance)
+
+      const studentGrades: { [key: number]: number[] } = {}
+      data.forEach((grade: any) => {
+        const studentId = grade.student?.id || 0
+        if (!studentGrades[studentId]) {
+          studentGrades[studentId] = []
+        }
+        if (grade.score) {
+          studentGrades[studentId].push(grade.score)
+        }
+      })
+
+      const studentResponse = await fetch(`${BACKEND_URL}/students`)
+      if (!studentResponse.ok) {
+        throw new Error("Failed to fetch students for GPA")
+      }
+      const studentData = await studentResponse.json()
+      const normalizedStudents = Array.isArray(studentData)
+        ? studentData.slice(0, 3).map((student: any) => {
+            const scores = studentGrades[student.id] || []
+            const avgScore = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0
+            return {
+              id: student.id || 0,
+              name: `${student.firstname || ""} ${student.lastname || ""}`.trim() || "Unknown Student",
+              level: student.level?.name || student.levelName || "Unknown Level",
+              group: student.group?.name || student.groupName || "Unknown Group",
+              gpa: avgScore ? scoreToGpa(avgScore).toFixed(1) : "N/A",
+            }
+          })
+        : []
+      setStudents(normalizedStudents)
+    } catch (error) {
+      console.error(`[DEBUG] Error fetching grades:`, error)
+      setError(error instanceof Error ? error.message : "Failed to load grades")
+      setAverageGpa(0)
+      setSubjectPerformance([])
+      setStudents([])
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load grades",
+        variant: "destructive",
+      })
+    }
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        await Promise.all([
+          fetchStudents(),
+          fetchTeachers(),
+          fetchSubjects(),
+          fetchGrades(),
+        ])
+      } catch (error) {
+        console.error(`[DEBUG] Error in fetch sequence:`, error)
+        setError("Failed to load dashboard data")
+      } finally {
+        setIsLoading(false)
+        console.log(`[DEBUG] Fetch completed, isLoading: false`)
+      }
+    }
+    fetchData()
+  }, [])
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ padding: "20px" }}>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, Principal Williams! Here&apos;s an overview of your school.
+          Welcome back, Administrator! Here's an overview of your school.
         </p>
       </div>
+      {isLoading && <p>Loading dashboard...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -28,8 +302,8 @@ export default function AdminDashboard() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1,248</div>
-                <p className="text-xs text-muted-foreground">+12% from last year</p>
+                <div className="text-2xl font-bold">{studentCount}</div>
+                <p className="text-xs text-muted-foreground">Updated today</p>
               </CardContent>
             </Card>
             <Card>
@@ -38,18 +312,18 @@ export default function AdminDashboard() {
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">64</div>
-                <p className="text-xs text-muted-foreground">+4 new this semester</p>
+                <div className="text-2xl font-bold">{teacherCount}</div>
+                <p className="text-xs text-muted-foreground">Updated today</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Classes</CardTitle>
+                <CardTitle className="text-sm font-medium">Subjects</CardTitle>
                 <School className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">86</div>
-                <p className="text-xs text-muted-foreground">Across 12 subjects</p>
+                <div className="text-2xl font-bold">{subjectCount}</div>
+                <p className="text-xs text-muted-foreground">Updated today</p>
               </CardContent>
             </Card>
             <Card>
@@ -58,8 +332,8 @@ export default function AdminDashboard() {
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3.4</div>
-                <p className="text-xs text-muted-foreground">+0.2 from last year</p>
+                <div className="text-2xl font-bold">{averageGpa.toFixed(1)}</div>
+                <p className="text-xs text-muted-foreground">Current semester</p>
               </CardContent>
             </Card>
           </div>
@@ -71,51 +345,22 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    {
-                      subject: "Mathematics",
-                      averageGrade: "B+",
-                      passingRate: "92%",
-                      trend: "+3%",
-                    },
-                    {
-                      subject: "Science",
-                      averageGrade: "A-",
-                      passingRate: "95%",
-                      trend: "+5%",
-                    },
-                    {
-                      subject: "English",
-                      averageGrade: "B",
-                      passingRate: "89%",
-                      trend: "+1%",
-                    },
-                    {
-                      subject: "History",
-                      averageGrade: "B-",
-                      passingRate: "87%",
-                      trend: "-2%",
-                    },
-                    {
-                      subject: "Computer Science",
-                      averageGrade: "A",
-                      passingRate: "96%",
-                      trend: "+7%",
-                    },
-                  ].map((subject, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{subject.subject}</p>
-                        <p className="text-sm text-muted-foreground">Avg. Grade: {subject.averageGrade}</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm">Passing: {subject.passingRate}</div>
-                        <div className={`text-sm ${subject.trend.startsWith("+") ? "text-green-500" : "text-red-500"}`}>
-                          {subject.trend}
+                  {subjectPerformance.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No performance data available.</p>
+                  ) : (
+                    subjectPerformance.map((subject, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium leading-none">{subject.subject}</p>
+                          <p className="text-sm text-muted-foreground">Avg. Grade: {subject.averageGrade}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm">Passing: {subject.passingRate}</div>
+                          <div className="text-sm text-muted-foreground">{subject.trend}</div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -133,7 +378,7 @@ export default function AdminDashboard() {
                       timestamp: "Today, 10:30 AM",
                     },
                     {
-                      action: "Class Schedule Updated",
+                      action: "Subject Schedule Updated",
                       details: "Spring Semester 2025",
                       timestamp: "Yesterday, 3:45 PM",
                     },
@@ -175,38 +420,23 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  {[
-                    {
-                      name: "Dr. Sarah Johnson",
-                      department: "Physics",
-                      classes: 5,
-                      students: 128,
-                    },
-                    {
-                      name: "Prof. Michael Chen",
-                      department: "Mathematics",
-                      classes: 4,
-                      students: 112,
-                    },
-                    {
-                      name: "Ms. Emily Rodriguez",
-                      department: "English",
-                      classes: 6,
-                      students: 156,
-                    },
-                  ].map((teacher, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{teacher.name}</p>
-                        <p className="text-sm text-muted-foreground">{teacher.department}</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">
-                          {teacher.classes} classes, {teacher.students} students
+                  {teachers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No teachers available.</p>
+                  ) : (
+                    teachers.map((teacher, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium leading-none">{teacher.name}</p>
+                          <p className="text-sm text-muted-foreground">{teacher.department}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm text-muted-foreground">
+                            {teacher.classes} subjects, {teacher.students} students
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <Link href="/dashboard/admin/teachers">
                   <Button variant="outline" className="w-full">
@@ -222,38 +452,23 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  {[
-                    {
-                      name: "Alex Johnson",
-                      level: "Level 2",
-                      group: "Group B",
-                      gpa: "3.8",
-                    },
-                    {
-                      name: "Jamie Smith",
-                      level: "Level 1",
-                      group: "Group A",
-                      gpa: "3.5",
-                    },
-                    {
-                      name: "Taylor Wilson",
-                      level: "Level 3",
-                      group: "Group C",
-                      gpa: "4.0",
-                    },
-                  ].map((student, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{student.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {student.level} - {student.group}
-                        </p>
+                  {students.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No students available.</p>
+                  ) : (
+                    students.map((student, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium leading-none">{student.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {student.level} - {student.group}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm text-muted-foreground">GPA: {student.gpa}</div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">GPA: {student.gpa}</div>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <Link href="/dashboard/admin/students">
                   <Button variant="outline" className="w-full">
@@ -272,7 +487,7 @@ export default function AdminDashboard() {
               <Link href="/dashboard/admin/teachers/new">
                 <Button>
                   <BookOpen className="mr-2 h-4 w-4" />
-                  Manage Teachers 
+                  Manage Teachers
                 </Button>
               </Link>
               <Link href="/dashboard/admin/students/new">
@@ -284,7 +499,25 @@ export default function AdminDashboard() {
               <Link href="/dashboard/admin/classes">
                 <Button variant="outline">
                   <School className="mr-2 h-4 w-4" />
-                  Manage Classes
+                  Manage Subjects
+                </Button>
+              </Link>
+              <Link href="/dashboard/admin/levels">
+                <Button variant="outline">
+                  <Layers className="mr-2 h-4 w-4" />
+                  Manage Levels
+                </Button>
+              </Link>
+              <Link href="/dashboard/admin/groups">
+                <Button variant="outline">
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage Groups
+                </Button>
+              </Link>
+              <Link href="/dashboard/admin/programs">
+                <Button variant="outline">
+                  <School className="mr-2 h-4 w-4" />
+                  Manage Programs
                 </Button>
               </Link>
               <Link href="/dashboard/admin/settings">
@@ -340,8 +573,8 @@ export default function AdminDashboard() {
                             notification.priority === "High"
                               ? "destructive"
                               : notification.priority === "Medium"
-                                ? "default"
-                                : "outline"
+                              ? "default"
+                              : "outline"
                           }
                         >
                           {notification.priority}

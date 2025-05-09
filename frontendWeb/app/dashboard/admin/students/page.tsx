@@ -1,78 +1,111 @@
-'use client';
+"use client"
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { toast } from "@/components/ui/use-toast"
 
 interface Student {
-  id: number;
-  email: string;
-  firstname: string;
-  lastname: string;
-  group: {
-    id: number;
-    name: string;
-  };
-  level: {
-    id: number;
-    name: string;
-  };
+  id: number
+  email: string
+  firstname: string
+  lastname: string
+  groupId: number
+  groupName: string
+  levelId: number
+  levelName: string
 }
 
-const StudentsPage = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
+const BACKEND_URL = "http://localhost:8080/api"
+
+export default function StudentsPage() {
+  const [students, setStudents] = useState<Student[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchStudents = async () => {
+    try {
+      console.log(`[DEBUG] Fetching students from ${BACKEND_URL}/students`)
+      const response = await fetch(`${BACKEND_URL}/students`)
+      console.log(`[DEBUG] Students fetch status: ${response.status} ${response.statusText}`)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`[DEBUG] Students fetch error response: ${errorText}`)
+        throw new Error("Failed to fetch students")
+      }
+
+      const data = await response.json()
+      console.log(`[DEBUG] Students response:`, data)
+
+      const normalizedStudents = Array.isArray(data) ? data.map((student: any) => ({
+        id: student.id || 0,
+        email: student.email || "",
+        firstname: student.firstname || "",
+        lastname: student.lastname || "",
+        groupId: student.group?.id || student.groupId || 0,
+        groupName: student.group?.name || student.groupName || "Unknown Group",
+        levelId: student.level?.id || student.levelId || 0,
+        levelName: student.level?.name || student.levelName || "Unknown Level",
+      })) : []
+
+      setStudents(normalizedStudents)
+
+      if (normalizedStudents.length === 0) {
+        console.log(`[DEBUG] No students found`)
+        toast({
+          title: "No Students",
+          description: "No students found in the system.",
+          variant: "default",
+        })
+      }
+    } catch (error) {
+      console.error(`[DEBUG] Error fetching students:`, error)
+      setError(error instanceof Error ? error.message : "Failed to load students")
+      setStudents([])
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load students",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+      console.log(`[DEBUG] Fetch completed, isLoading: false`)
+    }
+  }
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await fetch('http://localhost:8080/api/students');
-        const data = await response.json();
-        setStudents(data);
-      } catch (error) {
-        console.error('Error fetching students:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStudents();
-  }, []);
+    fetchStudents()
+  }, [])
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">All Students</h1>
+    <div className="space-y-6" style={{ padding: "20px" }}>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">All Students</h1>
+        <p className="text-muted-foreground">View all student accounts in the system.</p>
+      </div>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : students.length === 0 ? (
-        <p>No students found.</p>
+      {isLoading && <p>Loading students...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {students.length === 0 && !isLoading && !error ? (
+        <p className="text-muted-foreground">No students found.</p>
       ) : (
-        <table className="min-w-full border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-4 py-2">ID</th>
-              <th className="border px-4 py-2">First Name</th>
-              <th className="border px-4 py-2">Last Name</th>
-              <th className="border px-4 py-2">Email</th>
-              <th className="border px-4 py-2">Group</th>
-              <th className="border px-4 py-2">Level</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => (
-              <tr key={student.id}>
-                <td className="border px-4 py-2">{student.id}</td>
-                <td className="border px-4 py-2">{student.firstname}</td>
-                <td className="border px-4 py-2">{student.lastname}</td>
-                <td className="border px-4 py-2">{student.email}</td>
-                <td className="border px-4 py-2">{student.group?.name ?? 'N/A'}</td>
-                <td className="border px-4 py-2">{student.level?.name ?? 'N/A'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {students.map((student) => (
+            <Card key={student.id} className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">{student.firstname} {student.lastname}</CardTitle>
+                <CardDescription>{student.email}</CardDescription>
+              </CardHeader>
+              <CardContent className="text-sm">
+                <p><strong>ID:</strong> {student.id}</p>
+                <p><strong>Group:</strong> {student.groupName}</p>
+                <p><strong>Level:</strong> {student.levelName}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
-  );
-};
-
-export default StudentsPage;
+  )
+}

@@ -1,9 +1,10 @@
 package com.example.demo.WorkReturn;
 
-import com.example.demo.Student.*;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.example.demo.Student.Student;
 import com.example.demo.Assignment.Assignment;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
 
@@ -15,16 +16,17 @@ public class WorkReturn {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String filePath; // Path to the uploaded file
+    @JsonProperty("fileUrl") // Serialize filePath as fileUrl in JSON
+    private String filePath;
 
     @ManyToOne
     @JoinColumn(name = "student_id")
-    @JsonIgnore  // Ignore the student field to avoid recursion
+    @JsonIgnore
     private Student student;
 
     @ManyToOne
     @JoinColumn(name = "assignment_id")
-    @JsonIgnore  // Ignore the assignment field to avoid recursion
+    @JsonIgnore
     private Assignment assignment;
 
     public WorkReturn() {}
@@ -35,13 +37,12 @@ public class WorkReturn {
         this.assignment = assignment;
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
-        this.id = id; 
+        this.id = id;
     }
 
     public String getFilePath() {

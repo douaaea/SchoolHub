@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
 
-interface Subject {
+interface Group {
   id: number
   name: string
   levelId: number
@@ -30,17 +30,17 @@ interface Level {
 
 const BACKEND_URL = "http://localhost:8080/api"
 
-export default function SubjectsPage() {
-  const [subjects, setSubjects] = useState<Subject[]>([])
+export default function GroupsPage() {
+  const [groups, setGroups] = useState<Group[]>([])
   const [levels, setLevels] = useState<Level[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [newSubject, setNewSubject] = useState<{ name: string; levelId: number }>({
+  const [newGroup, setNewGroup] = useState<{ name: string; levelId: number }>({
     name: "",
     levelId: 0,
   })
   const [isEditing, setIsEditing] = useState(false)
-  const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null)
+  const [editingGroupId, setEditingGroupId] = useState<number | null>(null)
 
   const fetchLevels = async () => {
     try {
@@ -56,7 +56,10 @@ export default function SubjectsPage() {
 
       const data = await response.json()
       console.log(`[DEBUG] Levels response:`, data)
-      setLevels(Array.isArray(data) ? data : [])
+      setLevels(Array.isArray(data) ? data.map((level: any) => ({
+        id: level.id || 0,
+        name: level.name || "Unknown Level",
+      })) : [])
     } catch (error) {
       console.error(`[DEBUG] Error fetching levels:`, error)
       setError(error instanceof Error ? error.message : "Failed to load levels")
@@ -64,52 +67,52 @@ export default function SubjectsPage() {
     }
   }
 
-  const fetchSubjects = async () => {
+  const fetchGroups = async () => {
     try {
-      console.log(`[DEBUG] Fetching subjects from ${BACKEND_URL}/subjects`)
+      console.log(`[DEBUG] Fetching groups from ${BACKEND_URL}/groups`)
       console.log(`[DEBUG] Current levels state:`, levels)
-      const response = await fetch(`${BACKEND_URL}/subjects`)
-      console.log(`[DEBUG] Subjects fetch status: ${response.status} ${response.statusText}`)
+      const response = await fetch(`${BACKEND_URL}/groups`)
+      console.log(`[DEBUG] Groups fetch status: ${response.status} ${response.statusText}`)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`[DEBUG] Subjects fetch error response: ${errorText}`)
-        throw new Error("Failed to fetch subjects")
+        console.error(`[DEBUG] Groups fetch error response: ${errorText}`)
+        throw new Error("Failed to fetch groups")
       }
 
       const data = await response.json()
-      console.log(`[DEBUG] Subjects response:`, data)
+      console.log(`[DEBUG] Groups response:`, data)
 
-      const normalizedSubjects = Array.isArray(data) ? data.map((subject: any) => {
-        const levelName = subject.levelName || "N/A"
+      const normalizedGroups = Array.isArray(data) ? data.map((group: any) => {
+        const levelName = group.levelName || "N/A"
         const level = levels.find(l => l.name === levelName) || { id: 0, name: levelName }
-        console.log(`[DEBUG] Matching level for subject ${subject.name}: levelName=${levelName}, foundLevel=`, level)
+        console.log(`[DEBUG] Matching level for group ${group.name}: levelName=${levelName}, foundLevel=`, level)
         return {
-          id: subject.id || 0,
-          name: subject.name || "Unknown Subject",
+          id: group.id || 0,
+          name: group.name || "Unknown Group",
           levelId: level.id,
           levelName: levelName,
         }
       }) : []
 
-      console.log(`[DEBUG] Normalized subjects:`, normalizedSubjects)
-      setSubjects(normalizedSubjects)
+      console.log(`[DEBUG] Normalized groups:`, normalizedGroups)
+      setGroups(normalizedGroups)
 
-      if (normalizedSubjects.length === 0) {
-        console.log(`[DEBUG] No subjects found`)
+      if (normalizedGroups.length === 0) {
+        console.log(`[DEBUG] No groups found`)
         toast({
-          title: "No Subjects",
-          description: "No subjects found in the system.",
+          title: "No Groups",
+          description: "No groups found in the system.",
           variant: "default",
         })
       }
     } catch (error) {
-      console.error(`[DEBUG] Error fetching subjects:`, error)
-      setError(error instanceof Error ? error.message : "Failed to load subjects")
-      setSubjects([])
+      console.error(`[DEBUG] Error fetching groups:`, error)
+      setError(error instanceof Error ? error.message : "Failed to load groups")
+      setGroups([])
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load subjects",
+        description: error instanceof Error ? error.message : "Failed to load groups",
         variant: "destructive",
       })
     }
@@ -121,7 +124,7 @@ export default function SubjectsPage() {
       setError(null)
       try {
         await fetchLevels()
-        await fetchSubjects()
+        await fetchGroups()
       } catch (error) {
         console.error(`[DEBUG] Error in fetch sequence:`, error)
       } finally {
@@ -135,45 +138,45 @@ export default function SubjectsPage() {
 
   useEffect(() => {
     if (levels.length > 0) {
-      fetchSubjects()
+      fetchGroups()
     }
   }, [levels])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!newSubject.name || newSubject.levelId === 0) {
+    if (!newGroup.name || newGroup.levelId === 0) {
       toast({
         title: "Error",
-        description: "Subject name and level are required.",
+        description: "Group name and level are required.",
         variant: "destructive",
       })
       return
     }
 
-    const subjectToSend = {
-      name: newSubject.name,
-      levelId: newSubject.levelId,
+    const groupToSend = {
+      name: newGroup.name,
+      levelId: newGroup.levelId,
     }
 
     try {
-      console.log(`[DEBUG] Submitting subject:`, subjectToSend)
-      console.log(`[DEBUG] Raw payload:`, JSON.stringify(subjectToSend))
-      const url = isEditing ? `${BACKEND_URL}/subjects/${editingSubjectId}` : `${BACKEND_URL}/subjects`
+      console.log(`[DEBUG] Submitting group:`, groupToSend)
+      console.log(`[DEBUG] Raw payload:`, JSON.stringify(groupToSend))
+      const url = isEditing ? `${BACKEND_URL}/groups/${editingGroupId}` : `${BACKEND_URL}/groups`
       const response = await fetch(url, {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subjectToSend),
+        body: JSON.stringify(groupToSend),
       })
 
-      console.log(`[DEBUG] Subject submission status: ${response.status} ${response.statusText}`)
+      console.log(`[DEBUG] Group submission status: ${response.status} ${response.statusText}`)
       if (!response.ok) {
         const responseText = await response.text()
-        let errorMessage = "Failed to save subject"
+        let errorMessage = "Failed to save group"
         try {
           const errorData = JSON.parse(responseText)
           errorMessage = errorData.message || errorData.error || errorMessage
-          console.error(`[DEBUG] Subject submission error response:`, errorData)
+          console.error(`[DEBUG] Group submission error response:`, errorData)
         } catch {
           console.error(`[DEBUG] Failed to parse error response as JSON:`, responseText)
           errorMessage = responseText || errorMessage
@@ -181,64 +184,64 @@ export default function SubjectsPage() {
         throw new Error(errorMessage)
       }
 
-      const savedSubject = await response.json()
-      console.log(`[DEBUG] Saved subject:`, savedSubject)
+      const savedGroup = await response.json()
+      console.log(`[DEBUG] Saved group:`, savedGroup)
 
-      const levelId = savedSubject.level?.id || newSubject.levelId || 0
+      const levelId = savedGroup.level?.id || newGroup.levelId || 0
       const level = levels.find(l => l.id === levelId)
-      console.log(`[DEBUG] Matching level for saved subject: levelId=${levelId}, foundLevel=`, level)
-      const updatedSubject = {
-        id: savedSubject.id || 0,
-        name: savedSubject.name || "Unknown Subject",
+      console.log(`[DEBUG] Matching level for saved group: levelId=${levelId}, foundLevel=`, level)
+      const updatedGroup = {
+        id: savedGroup.id || 0,
+        name: savedGroup.name || "Unknown Group",
         levelId: levelId,
-        levelName: level?.name || savedSubject.level?.name || "N/A",
+        levelName: level?.name || savedGroup.level?.name || "N/A",
       }
-      console.log(`[DEBUG] Normalized saved subject:`, updatedSubject)
+      console.log(`[DEBUG] Normalized saved group:`, updatedGroup)
 
-      await fetchSubjects()
+      await fetchGroups()
 
-      setNewSubject({ name: "", levelId: 0 })
+      setNewGroup({ name: "", levelId: 0 })
       setIsEditing(false)
-      setEditingSubjectId(null)
+      setEditingGroupId(null)
 
       toast({
         title: "Success",
-        description: isEditing ? "Subject updated successfully!" : "Subject created successfully!",
+        description: isEditing ? "Group updated successfully!" : "Group created successfully!",
       })
     } catch (error) {
-      console.error(`[DEBUG] Error submitting subject:`, error)
+      console.error(`[DEBUG] Error submitting group:`, error)
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save subject",
+        description: error instanceof Error ? error.message : "Failed to save group",
         variant: "destructive",
       })
     }
   }
 
-  const handleEdit = (subject: Subject) => {
-    setNewSubject({
-      name: subject.name,
-      levelId: subject.levelId,
+  const handleEdit = (group: Group) => {
+    setNewGroup({
+      name: group.name,
+      levelId: group.levelId,
     })
     setIsEditing(true)
-    setEditingSubjectId(subject.id)
+    setEditingGroupId(group.id)
   }
 
   const handleDelete = async (id: number) => {
     try {
-      console.log(`[DEBUG] Deleting subject id: ${id}`)
-      const response = await fetch(`${BACKEND_URL}/subjects/${id}`, {
+      console.log(`[DEBUG] Deleting group id: ${id}`)
+      const response = await fetch(`${BACKEND_URL}/groups/${id}`, {
         method: "DELETE",
       })
 
-      console.log(`[DEBUG] Delete subject status: ${response.status} ${response.statusText}`)
+      console.log(`[DEBUG] Delete group status: ${response.status} ${response.statusText}`)
       if (!response.ok) {
         const responseText = await response.text()
-        let errorMessage = "Failed to delete subject"
+        let errorMessage = "Failed to delete group"
         try {
           const errorData = JSON.parse(responseText)
           errorMessage = errorData.message || errorData.error || errorMessage
-          console.error(`[DEBUG] Delete subject error response:`, errorData)
+          console.error(`[DEBUG] Delete group error response:`, errorData)
         } catch {
           console.error(`[DEBUG] Failed to parse delete error response as JSON:`, responseText)
           errorMessage = responseText || errorMessage
@@ -246,17 +249,17 @@ export default function SubjectsPage() {
         throw new Error(errorMessage)
       }
 
-      await fetchSubjects()
+      await fetchGroups()
 
       toast({
         title: "Success",
-        description: "Subject deleted successfully!",
+        description: "Group deleted successfully!",
       })
     } catch (error) {
-      console.error(`[DEBUG] Error deleting subject:`, error)
+      console.error(`[DEBUG] Error deleting group:`, error)
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete subject",
+        description: error instanceof Error ? error.message : "Failed to delete group",
         variant: "destructive",
       })
     }
@@ -265,28 +268,28 @@ export default function SubjectsPage() {
   return (
     <div className="space-y-6" style={{ padding: "20px" }}>
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Manage Subjects</h1>
-        <p className="text-muted-foreground">Add, edit, or delete subjects in the system.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Manage Groups</h1>
+        <p className="text-muted-foreground">Add, edit, or delete groups in the system.</p>
       </div>
 
-      {isLoading && <p>Loading subjects...</p>}
+      {isLoading && <p>Loading groups...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <Card>
         <CardHeader>
-          <CardTitle>{isEditing ? "Edit Subject" : "Add Subject"}</CardTitle>
-          <CardDescription>Fill in the details to {isEditing ? "update" : "create"} a subject.</CardDescription>
+          <CardTitle>{isEditing ? "Edit Group" : "Add Group"}</CardTitle>
+          <CardDescription>Fill in the details to {isEditing ? "update" : "create"} a group.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Subject Name</Label>
+              <Label htmlFor="name">Group Name</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Enter subject name"
-                value={newSubject.name}
-                onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })}
+                placeholder="Enter group name"
+                value={newGroup.name}
+                onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
                 required
               />
             </div>
@@ -294,8 +297,8 @@ export default function SubjectsPage() {
               <Label htmlFor="levelId">Level</Label>
               <select
                 id="levelId"
-                value={newSubject.levelId}
-                onChange={(e) => setNewSubject({ ...newSubject, levelId: Number(e.target.value) })}
+                value={newGroup.levelId}
+                onChange={(e) => setNewGroup({ ...newGroup, levelId: Number(e.target.value) })}
                 required
                 className="w-full border rounded-md p-2"
               >
@@ -308,15 +311,15 @@ export default function SubjectsPage() {
               </select>
             </div>
             <div className="space-x-2">
-              <Button type="submit">{isEditing ? "Update Subject" : "Add Subject"}</Button>
+              <Button type="submit">{isEditing ? "Update Group" : "Add Group"}</Button>
               {isEditing && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setNewSubject({ name: "", levelId: 0 })
+                    setNewGroup({ name: "", levelId: 0 })
                     setIsEditing(false)
-                    setEditingSubjectId(null)
+                    setEditingGroupId(null)
                   }}
                 >
                   Cancel Edit
@@ -327,21 +330,21 @@ export default function SubjectsPage() {
         </CardContent>
       </Card>
 
-      {subjects.length === 0 && !isLoading && !error ? (
-        <p className="text-muted-foreground">No subjects found.</p>
+      {groups.length === 0 && !isLoading && !error ? (
+        <p className="text-muted-foreground">No groups found.</p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((subject) => (
-            <Card key={subject.id} className="overflow-hidden">
+          {groups.map((group) => (
+            <Card key={group.id} className="overflow-hidden">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{subject.name}</CardTitle>
-                <CardDescription>Level: {subject.levelName}</CardDescription>
+                <CardTitle className="text-lg">{group.name}</CardTitle>
+                <CardDescription>Level: {group.levelName}</CardDescription>
               </CardHeader>
               <CardContent className="text-sm">
-                <p><strong>ID:</strong> {subject.id}</p>
+                <p><strong>ID:</strong> {group.id}</p>
               </CardContent>
               <CardFooter className="space-x-2">
-                <Button onClick={() => handleEdit(subject)}>Edit</Button>
+                <Button onClick={() => handleEdit(group)}>Edit</Button>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="destructive">Delete</Button>
@@ -350,14 +353,14 @@ export default function SubjectsPage() {
                     <DialogHeader>
                       <DialogTitle>Confirm Deletion</DialogTitle>
                       <DialogDescription>
-                        Are you sure you want to delete the subject "{subject.name}"? This action cannot be undone.
+                        Are you sure you want to delete the group "{group.name}"? This action cannot be undone.
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => {}}>
                         Cancel
                       </Button>
-                      <Button variant="destructive" onClick={() => handleDelete(subject.id)}>
+                      <Button variant="destructive" onClick={() => handleDelete(group.id)}>
                         Delete
                       </Button>
                     </DialogFooter>

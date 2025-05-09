@@ -1,5 +1,11 @@
 package com.example.demo.Grade;
 
+import com.example.demo.Assignment.Assignment;
+import com.example.demo.Assignment.AssignmentRepository;
+import com.example.demo.Student.Student;
+import com.example.demo.Student.StudentRepository;
+import com.example.demo.Subject.Subject;
+import com.example.demo.Subject.SubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,52 +21,97 @@ public class GradeController {
     @Autowired
     private GradeRepository gradeRepository;
 
-    // Create a new Grade
-    @PostMapping
-    public ResponseEntity<Grade> createGrade(@RequestBody Grade grade) {
-        Grade savedGrade = gradeRepository.save(grade);
-        return new ResponseEntity<>(savedGrade, HttpStatus.CREATED);
-    }
+    @Autowired
+    private StudentRepository studentRepository;
 
-    // Get all Grades
+    @Autowired
+    private SubjectRepository subjectRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    // Get all grades
     @GetMapping
     public List<Grade> getAllGrades() {
-        return gradeRepository.findAll();
+        List<Grade> grades = gradeRepository.findAll();
+        System.out.println("Grades returned: " + grades.size());
+        return grades;
     }
 
-    // Get Grade by ID
+    // Get a specific grade by ID
     @GetMapping("/{id}")
     public ResponseEntity<Grade> getGradeById(@PathVariable Long id) {
         Optional<Grade> grade = gradeRepository.findById(id);
-        if (grade.isPresent()) {
-            return new ResponseEntity<>(grade.get(), HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return grade.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Update Grade by ID
+    // Create a new grade
+    @PostMapping
+    public ResponseEntity<Grade> createGrade(@RequestBody GradeDTO gradeDTO) {
+        // Convert DTO to entity and save it
+        Grade grade = new Grade();
+        grade.setScore(gradeDTO.getScore());
+
+        // Fetch and set relationships
+        Student student = studentRepository.findById(gradeDTO.getStudentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+        grade.setStudent(student);
+
+        Subject subject = subjectRepository.findById(gradeDTO.getSubjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found"));
+        grade.setSubject(subject);
+
+        Assignment assignment = assignmentRepository.findById(gradeDTO.getAssignmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment not found"));
+        grade.setAssignment(assignment);
+
+        // Save the grade to the database
+        gradeRepository.save(grade);
+
+        return ResponseEntity.ok(grade);  // Return the saved grade
+    }
+
+    // Update an existing grade
     @PutMapping("/{id}")
-    public ResponseEntity<Grade> updateGrade(@PathVariable Long id, @RequestBody Grade updatedGrade) {
-        Optional<Grade> grade = gradeRepository.findById(id);
-        if (grade.isPresent()) {
-            updatedGrade.setId(id); // Set the ID to ensure the correct grade is updated
-            Grade savedGrade = gradeRepository.save(updatedGrade);
-            return new ResponseEntity<>(savedGrade, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<Grade> updateGrade(@PathVariable Long id, @RequestBody GradeDTO gradeDTO) {
+        if (!gradeRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
         }
+
+        // Fetch the existing grade
+        Optional<Grade> existingGrade = gradeRepository.findById(id);
+        if (existingGrade.isPresent()) {
+            Grade grade = existingGrade.get();
+            grade.setScore(gradeDTO.getScore());
+
+            // Fetch and set relationships
+            Student student = studentRepository.findById(gradeDTO.getStudentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+            grade.setStudent(student);
+
+            Subject subject = subjectRepository.findById(gradeDTO.getSubjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Subject not found"));
+            grade.setSubject(subject);
+
+            Assignment assignment = assignmentRepository.findById(gradeDTO.getAssignmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Assignment not found"));
+            grade.setAssignment(assignment);
+
+            gradeRepository.save(grade);  // Save the updated grade
+            return ResponseEntity.ok(grade);
+        }
+
+        return ResponseEntity.notFound().build();
     }
 
-    // Delete Grade by ID
+    // Delete a grade
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGrade(@PathVariable Long id) {
-        Optional<Grade> grade = gradeRepository.findById(id);
-        if (grade.isPresent()) {
-            gradeRepository.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        if (!gradeRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
         }
+
+        gradeRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
