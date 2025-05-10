@@ -5,8 +5,24 @@ services:
     build: ./backend
     ports:
       - "8080:8080"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
 
   frontend:
     build: ./frontendWeb
     ports:
       - "80:80"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
