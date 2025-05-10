@@ -94,3 +94,24 @@ stages:
             ArtifactName: 'AndroidAPK'
             publishLocation: 'Container'
           displayName: 'Publish Android APK'
+
+# --- DEPLOYMENT (Docker Compose local) ---
+- stage: Deploy_Local
+  displayName: ' Déploiement local avec Docker Compose'
+  dependsOn:
+    - Build_Backend
+    - Build_Frontend
+  condition: succeeded()
+  jobs:
+    - job: deploy
+      displayName: 'Déploiement sur Docker Desktop'
+      steps:
+        - script: |
+            echo " Arrêt des anciens conteneurs..."
+            docker compose down || true
+          displayName: ' Arrêter les conteneurs existants'
+
+        - script: |
+            echo " Reconstruction et démarrage"
+            docker compose up --build -d
+          displayName: ' Lancer docker-compose'
