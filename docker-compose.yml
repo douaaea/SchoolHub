@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    image: scholarhub-backend
     ports:
       - "8080:8080"
     deploy:
@@ -15,7 +15,7 @@ services:
           memory: 512M
 
   frontend:
-    build: ./frontendWeb
+    image: scholarhub-frontend
     ports:
       - "80:80"
     deploy:
