@@ -20,7 +20,7 @@ variables:
 
 stages:
 
-# --- BACKEND (Spring Boot) ---
+# --- BACKEND (Spring Boot dans /demo) ---
 - stage: Build_Backend
   displayName: 'Build & Test Spring Boot'
   jobs:
@@ -35,12 +35,14 @@ stages:
             jdkArchitectureOption: 'x64'
 
         - script: |
-            cd $(backendDir)
+            cd $(backendDir)/demo
+            chmod +x mvnw
             ./mvnw clean install
           displayName: 'Build backend with Maven'
 
         - script: |
-            cd $(backendDir)
+            cd $(backendDir)/demo
+            chmod +x mvnw
             ./mvnw test
           displayName: 'Run backend unit tests'
 
@@ -109,9 +111,9 @@ stages:
         - script: |
             echo " Arrêt des anciens conteneurs..."
             docker compose down || true
-          displayName: ' Arrêter les conteneurs existants'
+          displayName: 'Arrêter les conteneurs existants'
 
         - script: |
-            echo " Reconstruction et démarrage"
+            echo "Reconstruction et démarrage"
             docker compose up --build -d
-          displayName: ' Lancer docker-compose'
+          displayName: 'Lancer docker-compose'
