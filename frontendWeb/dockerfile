@@ -1,10 +1,11 @@
-# Build React app using a smaller, more secure image
+# Étape 1 : Build statique avec Next.js (output: 'export')
 FROM node:20-slim AS build
 WORKDIR /app
 COPY . .
-RUN npm install --legacy-peer-deps && npm run build
+RUN npm install --legacy-peer-deps
+RUN npm run build
 
-# Serve with secure Nginx image
+# Étape 2 : Serveur Nginx
 FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /app/out /usr/share/nginx/html
 EXPOSE 80
