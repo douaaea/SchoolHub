@@ -1,8 +1,12 @@
 trigger:
-- main  # Or use 'master' if that's your branch
+  branches:
+    include:
+      - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: Default
+  demands:
+    - agent.name -equals DESKTOP-CIJ61FT
 
 steps:
 - script: echo "CI pipeline triggered by GitHub push"
