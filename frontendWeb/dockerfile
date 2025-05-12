@@ -1,11 +1,20 @@
 # Étape 1 : Build statique avec Next.js (output: 'export')
 FROM node:20-slim AS build
 WORKDIR /app
+
+# Copier tout le contenu du projet
 COPY . .
+
+# Supprimer le fichier pnpm-lock.yaml s’il existe pour éviter que Next.js n'essaie d'utiliser pnpm
+RUN rm -f pnpm-lock.yaml
+
+# Installer les dépendances en mode compatible
 RUN npm install --legacy-peer-deps
+
+# Compiler l'application en mode production (Next.js 15+ utilise automatiquement output: 'export')
 RUN npm run build
 
-# Étape 2 : Serveur Nginx
+# Étape 2 : Serveur Nginx pour héberger le site statique
 FROM nginx:alpine
 COPY --from=build /app/out /usr/share/nginx/html
 EXPOSE 80
