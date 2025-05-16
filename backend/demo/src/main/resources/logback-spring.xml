@@ -9,3 +9,16 @@
     <appender-ref ref="TCP" />
   </root>
 </configuration>
+<configuration>
+    <appender name="LOGSTASH" class="ch.qos.logback.classic.net.SocketAppender">
+        <remoteHost>${LOGSTASH_HOST:-logstash}</remoteHost>
+        <port>5000</port>
+        <reconnectionDelay>10000</reconnectionDelay>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="LOGSTASH"/>
+    </root>
+</configuration>
+
