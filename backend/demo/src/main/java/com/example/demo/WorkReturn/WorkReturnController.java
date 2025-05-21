@@ -4,8 +4,13 @@ import com.example.demo.Student.Student;
 import com.example.demo.Student.StudentRepository;
 import com.example.demo.Assignment.Assignment;
 import com.example.demo.Assignment.AssignmentRepository;
+import com.example.demo.Grade.Grade;
+import com.example.demo.Grade.GradeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/workreturns")
@@ -27,7 +33,7 @@ public class WorkReturnController {
 
     private static final Logger LOGGER = Logger.getLogger(WorkReturnController.class.getName());
 
-    @Value("${file.upload-dir:D:/AzureDevopsScholarhub/ScholarHub/backend/Uploads/}")
+    @Value("${file.upload-dir:D:/AzureDevopsScholarhub/ScholarHub/backend/uploads/}")
     private String UPLOAD_DIR;
 
     @Autowired
@@ -39,19 +45,20 @@ public class WorkReturnController {
     @Autowired
     private AssignmentRepository assignmentRepository;
 
+    @Autowired
+    private GradeRepository gradeRepository;
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createWorkReturn(
             @RequestParam("assignmentId") Long assignmentId,
             @RequestParam("studentId") Long studentId,
             @RequestParam("file") MultipartFile file) {
         try {
-            // Validate input parameters
             if (assignmentId == null || studentId == null) {
                 LOGGER.warning("[DEBUG] POST /api/workreturns - Missing assignmentId or studentId");
                 return ResponseEntity.badRequest().body(createErrorResponse("Assignment ID and Student ID are required"));
             }
 
-            // Validate file
             if (file == null || file.isEmpty()) {
                 LOGGER.warning("[DEBUG] POST /api/workreturns - Empty file uploaded");
                 return ResponseEntity.badRequest().body(createErrorResponse("File is empty or missing"));
@@ -65,7 +72,6 @@ public class WorkReturnController {
                 return ResponseEntity.badRequest().body(createErrorResponse("Only PDF, DOC, DOCX files are allowed"));
             }
 
-            // Fetch Student and Assignment entities
             Optional<Student> studentOpt = studentRepository.findById(studentId);
             if (!studentOpt.isPresent()) {
                 LOGGER.warning("[DEBUG] POST /api/workreturns - Student not found: " + studentId);
@@ -80,11 +86,10 @@ public class WorkReturnController {
             }
             Assignment assignment = assignmentOpt.get();
 
-            // Save file
             String uniqueFileName = UUID.randomUUID() + "_" + fileName;
             File dest = new File(UPLOAD_DIR, uniqueFileName);
             try {
-                dest.getParentFile().mkdirs(); // Create Uploads directory if it doesn't exist
+                dest.getParentFile().mkdirs();
                 LOGGER.info("[DEBUG] POST /api/workreturns - Saving file to: " + dest.getAbsolutePath());
                 file.transferTo(dest);
             } catch (IOException e) {
@@ -93,13 +98,11 @@ public class WorkReturnController {
                         .body(createErrorResponse("Failed to save file: " + e.getMessage()));
             }
 
-            // Create WorkReturn entity
             WorkReturn workReturn = new WorkReturn();
-            workReturn.setFilePath("/Uploads/" + uniqueFileName);
+            workReturn.setFilePath("/uploads/" + uniqueFileName);
             workReturn.setStudent(student);
             workReturn.setAssignment(assignment);
 
-            // Save to database
             LOGGER.info("[DEBUG] POST /api/workreturns - Saving WorkReturn for assignmentId: " + assignmentId);
             WorkReturn savedWorkReturn;
             try {
@@ -111,18 +114,16 @@ public class WorkReturnController {
                         .body(createErrorResponse("Failed to save WorkReturn to database: " + e.getMessage()));
             }
 
-            // Update assignment status
-            assignment.setStatus("Submitted");
+            assignment.setStatus("SUBMITTED");
             try {
                 assignmentRepository.save(assignment);
-                LOGGER.info("[DEBUG] POST /api/workreturns - Updated assignment status to Submitted: " + assignmentId);
+                LOGGER.info("[DEBUG] POST /api/workreturns - Updated assignment status to SUBMITTED: " + assignmentId);
             } catch (Exception e) {
                 LOGGER.severe("[DEBUG] POST /api/workreturns - Failed to update assignment status: " + e.getMessage());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(createErrorResponse("Failed to update assignment status: " + e.getMessage()));
             }
 
-            // Return JSON with id and fileUrl
             Map<String, Object> response = new HashMap<>();
             response.put("id", savedWorkReturn.getId());
             response.put("fileUrl", savedWorkReturn.getFilePath());
@@ -134,16 +135,35 @@ public class WorkReturnController {
         }
     }
 
-    private Map<String, String> createErrorResponse(String message) {
-        Map<String, String> error = new HashMap<>();
-        error.put("message", message);
-        return error;
-    }
-
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<WorkReturn> getAllWorkReturns() {
-        LOGGER.info("[DEBUG] GET /api/workreturns - Fetching all WorkReturns");
-        return workReturnRepository.findAll();
+    public ResponseEntity<List<WorkReturn>> getAllWorkReturns(
+            @RequestParam(value = "groupId", required = false) Long groupId,
+            @RequestParam(value = "studentId", required = false) Long studentId) {
+        LOGGER.info("[DEBUG] GET /api/workreturns - Fetching WorkReturns, groupId: " + groupId + ", studentId: " + studentId);
+        List<WorkReturn> workReturns = workReturnRepository.findAll();
+        LOGGER.info("[DEBUG] GET /api/workreturns - Total WorkReturns before filtering: " + workReturns.size());
+
+        // Filter out WorkReturns with null student
+        workReturns = workReturns.stream()
+                .filter(wr -> wr.getStudent() != null)
+                .collect(Collectors.toList());
+
+        if (studentId != null) {
+            workReturns = workReturns.stream()
+                    .filter(wr -> wr.getStudent().getId().equals(studentId))
+                    .collect(Collectors.toList());
+            LOGGER.info("[DEBUG] GET /api/workreturns - Filtered by studentId: " + studentId + ", found: " + workReturns.size());
+        } else if (groupId != null) {
+            workReturns = workReturns.stream()
+                    .filter(wr -> wr.getAssignment() != null &&
+                            wr.getAssignment().getGroup() != null &&
+                            wr.getAssignment().getGroup().getId().equals(groupId))
+                    .collect(Collectors.toList());
+            LOGGER.info("[DEBUG] GET /api/workreturns - Filtered by groupId: " + groupId + ", found: " + workReturns.size());
+        }
+
+        LOGGER.info("[DEBUG] GET /api/workreturns - Found " + workReturns.size() + " WorkReturns after filtering");
+        return new ResponseEntity<>(workReturns, HttpStatus.OK);
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -159,18 +179,106 @@ public class WorkReturnController {
         }
     }
 
+    @GetMapping(value = "/{id}/download")
+    public ResponseEntity<Resource> downloadWorkReturnFile(@PathVariable Long id) {
+        LOGGER.info("[DEBUG] GET /api/workreturns/" + id + "/download - Downloading file");
+        Optional<WorkReturn> workReturnOpt = workReturnRepository.findById(id);
+        if (!workReturnOpt.isPresent()) {
+            LOGGER.warning("[DEBUG] GET /api/workreturns/" + id + "/download - WorkReturn not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        WorkReturn workReturn = workReturnOpt.get();
+        String filePath = workReturn.getFilePath();
+        if (filePath == null || !filePath.startsWith("/uploads/")) {
+            LOGGER.warning("[DEBUG] GET /api/workreturns/" + id + "/download - Invalid file path: " + filePath);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
+        String fileName = filePath.substring("/uploads/".length());
+        File file = new File(UPLOAD_DIR, fileName);
+        if (!file.exists()) {
+            LOGGER.warning("[DEBUG] GET /api/workreturns/" + id + "/download - File not found: " + file.getAbsolutePath());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        Resource resource = new FileSystemResource(file);
+        String contentType = fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" :
+                            fileName.toLowerCase().endsWith(".doc") || fileName.toLowerCase().endsWith(".docx") ?
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/octet-stream";
+
+        LOGGER.info("[DEBUG] GET /api/workreturns/" + id + "/download - Serving file: " + file.getAbsolutePath());
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(resource);
+    }
+
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> updateWorkReturn(@PathVariable Long id, @RequestBody WorkReturn updatedWorkReturn) {
+    public ResponseEntity<Object> updateWorkReturn(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         LOGGER.info("[DEBUG] PUT /api/workreturns/" + id + " - Updating WorkReturn");
-        Optional<WorkReturn> workReturn = workReturnRepository.findById(id);
-        if (workReturn.isPresent()) {
-            updatedWorkReturn.setId(id);
-            WorkReturn savedWorkReturn = workReturnRepository.save(updatedWorkReturn);
-            LOGGER.info("[DEBUG] PUT /api/workreturns/" + id + " - Updated WorkReturn");
-            return new ResponseEntity<>(savedWorkReturn, HttpStatus.OK);
-        } else {
+        Optional<WorkReturn> workReturnOpt = workReturnRepository.findById(id);
+        if (!workReturnOpt.isPresent()) {
             LOGGER.warning("[DEBUG] PUT /api/workreturns/" + id + " - WorkReturn not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(createErrorResponse("WorkReturn not found"));
+        }
+
+        WorkReturn workReturn = workReturnOpt.get();
+        try {
+            if (updates.containsKey("grade")) {
+                Object gradeObj = updates.get("grade");
+                Integer grade = gradeObj instanceof Integer ? (Integer) gradeObj : null;
+                if (gradeObj != null && grade == null) {
+                    try {
+                        grade = Integer.parseInt(gradeObj.toString());
+                    } catch (NumberFormatException e) {
+                        LOGGER.warning("[DEBUG] PUT /api/workreturns/" + id + " - Invalid grade format: " + gradeObj);
+                        return ResponseEntity.badRequest().body(createErrorResponse("Invalid grade format"));
+                    }
+                }
+                if (grade != null && (grade < 0 || grade > 100)) {
+                    LOGGER.warning("[DEBUG] PUT /api/workreturns/" + id + " - Grade out of range: " + grade);
+                    return ResponseEntity.badRequest().body(createErrorResponse("Grade must be between 0 and 100"));
+                }
+                workReturn.setGrade(grade);
+                LOGGER.info("[DEBUG] PUT /api/workreturns/" + id + " - Set grade to: " + grade);
+
+                // Create or update the corresponding Grade entry
+                Student student = workReturn.getStudent();
+                Assignment assignment = workReturn.getAssignment();
+                if (student == null || assignment == null) {
+                    LOGGER.warning("[DEBUG] PUT /api/workreturns/" + id + " - Missing student or assignment");
+                    return ResponseEntity.badRequest().body(createErrorResponse("Student or assignment missing"));
+                }
+
+                // Convert Integer grade to Double
+                Double gradeDouble = grade != null ? grade.doubleValue() : null;
+
+                // Find existing Grade for this student and assignment
+                Optional<Grade> existingGrade = gradeRepository.findByStudentAndAssignment(student, assignment);
+                Grade gradeEntity;
+                if (existingGrade.isPresent()) {
+                    gradeEntity = existingGrade.get();
+                    gradeEntity.setScore(gradeDouble);
+                } else {
+                    gradeEntity = new Grade(gradeDouble, student, assignment); // Use constructor
+                }
+
+                gradeRepository.save(gradeEntity);
+                LOGGER.info("[DEBUG] PUT /api/workreturns/" + id + " - Saved Grade for student: " + student.getId());
+            }
+
+            WorkReturn updatedWorkReturn = workReturnRepository.save(workReturn);
+            LOGGER.info("[DEBUG] PUT /api/workreturns/" + id + " - Updated WorkReturn");
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", updatedWorkReturn.getId());
+            response.put("fileUrl", updatedWorkReturn.getFilePath());
+            response.put("grade", updatedWorkReturn.getGrade());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            LOGGER.severe("[DEBUG] PUT /api/workreturns/" + id + " - Failed to update WorkReturn: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Failed to update WorkReturn: " + e.getMessage()));
         }
     }
 
@@ -185,5 +293,11 @@ public class WorkReturnController {
             LOGGER.warning("[DEBUG] DELETE /api/workreturns/" + id + " - WorkReturn not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(createErrorResponse("WorkReturn not found"));
         }
+    }
+
+    private Map<String, String> createErrorResponse(String message) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", message);
+        return error;
     }
 }

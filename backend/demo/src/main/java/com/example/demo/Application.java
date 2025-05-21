@@ -82,9 +82,7 @@ CommandLineRunner testEverything(LevelRepository levelRepo,
         Grade grade = new Grade(95.0, student, assignment);
         gradeRepo.save(grade);
 
-        // 10. Create a WorkReturn (student's submission)
-        WorkReturn workReturn = new WorkReturn("My homework content", student, assignment);
-        workReturnRepo.save(workReturn);
+      
 
         System.out.println("✅ All entities created and saved successfully!");
     };
