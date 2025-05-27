@@ -6,12 +6,14 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.schoolapp.LoginActivity;
 import com.example.schoolapp.R;
 import com.example.schoolapp.model.Group;
 import com.example.schoolapp.model.Level;
 import com.example.schoolapp.model.Program;
 import com.example.schoolapp.model.Student;
-import com.example.schoolapp.model.Subject; // Updated import
+import com.example.schoolapp.model.Subject;
 import com.example.schoolapp.model.Teacher;
 import com.example.schoolapp.service.ApiClient;
 import com.example.schoolapp.service.ApiService;
@@ -85,8 +87,13 @@ public class DashboardActivityMain extends AppCompatActivity {
 
         buttonLogout.setOnClickListener(v -> {
             Log.d(TAG, "Logging out");
+            // Clear shared preferences
             getSharedPreferences("user_prefs", MODE_PRIVATE).edit().clear().apply();
-            finish();
+            // Navigate to LoginActivity
+            Intent intent = new Intent(DashboardActivityMain.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear back stack
+            startActivity(intent);
+            finish(); // Close DashboardActivityMain
         });
 
         // Set up Bottom Navigation
@@ -239,7 +246,7 @@ public class DashboardActivityMain extends AppCompatActivity {
     }
 
     private void fetchSubjectCount() {
-        Call<List<Subject>> call = apiService.getSubjects(); // Updated to match ApiService
+        Call<List<Subject>> call = apiService.getSubjects();
         call.enqueue(new Callback<List<Subject>>() {
             @Override
             public void onResponse(Call<List<Subject>> call, Response<List<Subject>> response) {

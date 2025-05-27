@@ -148,7 +148,7 @@ public interface ApiService {
     @DELETE("api/grades/{id}")
     Call<Void> deleteGrade(@Path("id") Long id);
 
-    @POST("api/subjects")
+    @POST("api/subjects") // Fixed to match backend
     Call<Subject> addSubject(@Body SubjectInputDTO subject);
 
     @GET("api/subjects")

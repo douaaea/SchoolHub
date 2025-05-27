@@ -78,8 +78,13 @@ public class TeacherDashboardActivity extends AppCompatActivity {
 
         buttonLogout.setOnClickListener(v -> {
             Log.d(TAG, "Logging out");
+            // Clear shared preferences
             getSharedPreferences("user_prefs", MODE_PRIVATE).edit().clear().apply();
-            finish();
+            // Navigate to LoginActivity
+            Intent intent = new Intent(TeacherDashboardActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear back stack
+            startActivity(intent);
+            finish(); // Close TeacherDashboardActivity
         });
 
         // Set up Bottom Navigation

@@ -3,6 +3,7 @@ package com.example.demo.WorkReturn;
 import com.example.demo.Student.Student;
 import com.example.demo.Assignment.Assignment;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 @Entity
@@ -43,6 +44,7 @@ public class WorkReturn {
         this.id = id;
     }
 
+    @JsonProperty("fileUrl")
     public String getFilePath() {
         return filePath;
     }

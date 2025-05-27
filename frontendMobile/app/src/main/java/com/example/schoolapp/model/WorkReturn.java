@@ -41,20 +41,6 @@ public class WorkReturn {
     public void setSubjectName(String subjectName) { this.subjectName = subjectName; }
 
     public String getFilePath() {
-        // Assuming fileUrl is a full URL or path, and you want to extract the file path
-        if (fileUrl == null || fileUrl.isEmpty()) {
-            return null;
-        }
-
-        // If fileUrl is a URL and you want to extract just the file path part
-        // Example: from "http://example.com/uploads/homework.pdf" → "/uploads/homework.pdf"
-        try {
-            java.net.URL url = new java.net.URL(fileUrl);
-            return url.getPath();
-        } catch (Exception e) {
-            // If it's not a valid URL, return it as-is (assuming it's a file path already)
-            return fileUrl;
-        }
+        return fileUrl; // Backend provides a path like "/uploads/<filename>", so return as-is
     }
-
 }

@@ -9,7 +9,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.schoolapp.R;
-import com.example.schoolapp.model.Subject;
+import com.example.schoolapp.model.SubjectDTO;
 import com.example.schoolapp.service.ApiClient;
 import com.example.schoolapp.service.ApiService;
 import retrofit2.Call;
@@ -22,9 +22,9 @@ public class ManageSubjectActivity extends AppCompatActivity {
     private static final String TAG = "ManageSubjectActivity";
     private ListView listViewSubjects;
     private Button buttonAddSubject, buttonReturn;
-    private List<Subject> subjectList;
+    private List<SubjectDTO> subjectList;
     private ArrayAdapter<String> adapter;
-    private List<String> subjectNames;
+    private List<String> subjectDisplayNames;
     private ApiService apiService;
 
     @Override
@@ -37,8 +37,8 @@ public class ManageSubjectActivity extends AppCompatActivity {
         buttonReturn = findViewById(R.id.buttonReturn);
 
         subjectList = new ArrayList<>();
-        subjectNames = new ArrayList<>();
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, subjectNames);
+        subjectDisplayNames = new ArrayList<>();
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, subjectDisplayNames);
         listViewSubjects.setAdapter(adapter);
 
         apiService = ApiClient.getClient().create(ApiService.class);
@@ -50,17 +50,15 @@ public class ManageSubjectActivity extends AppCompatActivity {
 
         buttonReturn.setOnClickListener(v -> finish());
 
-        // Edit on click
         listViewSubjects.setOnItemClickListener((parent, view, position, id) -> {
-            Subject subject = subjectList.get(position);
+            SubjectDTO subject = subjectList.get(position);
             Intent intent = new Intent(this, EditSubjectActivity.class);
             intent.putExtra("subjectId", subject.getId());
             startActivity(intent);
         });
 
-        // Delete on long click
         listViewSubjects.setOnItemLongClickListener((parent, view, position, id) -> {
-            Subject subject = subjectList.get(position);
+            SubjectDTO subject = subjectList.get(position);
             deleteSubject(subject);
             return true;
         });
@@ -75,19 +73,24 @@ public class ManageSubjectActivity extends AppCompatActivity {
     }
 
     private void fetchSubjects() {
-        Call<List<Subject>> call = apiService.getSubjects(); // Updated to match ApiService
+        Call<List<SubjectDTO>> call = apiService.getSubjectsDTO(); // Updated to return SubjectDTO
         Log.d(TAG, "Fetching subjects from: " + call.request().url());
 
-        call.enqueue(new Callback<List<Subject>>() {
+        call.enqueue(new Callback<List<SubjectDTO>>() {
             @Override
-            public void onResponse(Call<List<Subject>> call, Response<List<Subject>> response) {
+            public void onResponse(Call<List<SubjectDTO>> call, Response<List<SubjectDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     subjectList.clear();
-                    subjectNames.clear();
+                    subjectDisplayNames.clear();
 
                     subjectList.addAll(response.body());
-                    for (Subject subject : subjectList) {
-                        subjectNames.add(subject.getName());
+                    for (SubjectDTO subject : subjectList) {
+                        if (subject.getLevelName() != null) {
+                            subjectDisplayNames.add(subject.getName() + " - Level " + subject.getLevelName());
+                        } else {
+                            subjectDisplayNames.add(subject.getName() + " - Level N/A");
+                            Log.w(TAG, "Subject " + subject.getName() + " has no level name");
+                        }
                     }
 
                     adapter.notifyDataSetChanged();
@@ -100,14 +103,14 @@ public class ManageSubjectActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<Subject>> call, Throwable t) {
+            public void onFailure(Call<List<SubjectDTO>> call, Throwable t) {
                 Log.e(TAG, "Network error fetching subjects: " + t.getMessage(), t);
                 Toast.makeText(ManageSubjectActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void deleteSubject(Subject subject) {
+    private void deleteSubject(SubjectDTO subject) {
         Call<Void> call = apiService.deleteSubject(subject.getId());
         Log.d(TAG, "Sending delete subject request to: " + call.request().url());
         call.enqueue(new Callback<Void>() {

@@ -223,13 +223,13 @@ public class GradeWorkReturnsActivity extends AppCompatActivity implements OnAct
                                     : "Unknown Student");
                             wr.setAssignmentName(assignment != null ? assignment.getTitle() : "Unknown Assignment");
                             wr.setSubjectName(subject != null ? subject.getName() : "Unknown Subject");
-                            Log.d(TAG, "WorkReturn ID: " + wr.getId() + ", File Path: " + wr.getFilePath()); // Debug log
+                            Log.d(TAG, "WorkReturn ID: " + wr.getId() + ", File Path: " + wr.getFilePath() + ", Student: " + wr.getStudent() + ", Assignment: " + wr.getAssignment());
                         }
                         workReturnList.addAll(fetchedWorkReturns);
                         adapter.notifyDataSetChanged();
                         Log.d(TAG, "Fetched " + fetchedWorkReturns.size() + " work returns for group ID: " + groupId + ". Total: " + workReturnList.size());
                     } else {
-                        Log.e(TAG, "Failed to fetch work returns for group ID " + groupId + ": " + response.code());
+                        Log.e(TAG, "Failed to fetch work returns for group ID " + groupId + ": " + response.code() + ", Message: " + response.message());
                     }
                     completedRequests[0]++;
                     checkIfAllRequestsCompleted(completedRequests[0], groupCount);
@@ -291,7 +291,7 @@ public class GradeWorkReturnsActivity extends AppCompatActivity implements OnAct
                                 : "Unknown Student");
                         wr.setAssignmentName(assignment != null ? assignment.getTitle() : "Unknown Assignment");
                         wr.setSubjectName(subject != null ? subject.getName() : "Unknown Subject");
-                        Log.d(TAG, "WorkReturn ID: " + wr.getId() + ", File Path: " + wr.getFilePath()); // Debug log
+                        Log.d(TAG, "WorkReturn ID: " + wr.getId() + ", File Path: " + wr.getFilePath() + ", Student: " + wr.getStudent() + ", Assignment: " + wr.getAssignment());
                     }
                     workReturnList.addAll(fetchedWorkReturns);
                     adapter.notifyDataSetChanged();
@@ -303,7 +303,7 @@ public class GradeWorkReturnsActivity extends AppCompatActivity implements OnAct
                         errorMessage = null;
                     }
                 } else {
-                    Log.e(TAG, "Failed to fetch all work returns: " + response.code());
+                    Log.e(TAG, "Failed to fetch all work returns: " + response.code() + ", Message: " + response.message());
                     errorMessage = "Failed to fetch submissions: " + response.code();
                     Toast.makeText(GradeWorkReturnsActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                 }
@@ -352,20 +352,28 @@ public class GradeWorkReturnsActivity extends AppCompatActivity implements OnAct
                 .filter(wr -> wr.getId().equals(workReturnId))
                 .findFirst()
                 .orElse(null);
-        if (workReturn == null || workReturn.getFilePath() == null) {
-            Log.e(TAG, "WorkReturn or filePath not found for ID: " + workReturnId);
+        if (workReturn == null) {
+            Log.e(TAG, "WorkReturn not found for ID: " + workReturnId);
+            Toast.makeText(this, "WorkReturn not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String filePath = workReturn.getFilePath();
+        if (filePath == null) {
+            Log.e(TAG, "FilePath is null for WorkReturn ID: " + workReturnId);
             Toast.makeText(this, "File not available for download", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.d(TAG, "Attempting to download file for WorkReturn ID: " + workReturnId + ", File Path: " + workReturn.getFilePath());
+        Log.d(TAG, "Attempting to download file for WorkReturn ID: " + workReturnId + ", File Path: " + filePath);
+        String fullUrl = "http://yourserver:8080/api/workreturns/" + workReturnId + "/download"; // Replace with your server URL
+        Log.d(TAG, "Download URL: " + fullUrl);
         Call<ResponseBody> call = apiService.downloadWorkReturnFile(workReturnId);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     try {
-                        String fileName = workReturn.getFilePath().substring(workReturn.getFilePath().lastIndexOf('/') + 1);
+                        String fileName = filePath.substring(filePath.lastIndexOf('/') + 1);
                         if (fileName.isEmpty()) fileName = "submission_" + workReturnId + ".pdf";
                         File destinationFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
                         java.io.FileOutputStream outputStream = new java.io.FileOutputStream(destinationFile);
@@ -377,14 +385,21 @@ public class GradeWorkReturnsActivity extends AppCompatActivity implements OnAct
                         Toast.makeText(GradeWorkReturnsActivity.this, "Error downloading file", Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Log.e(TAG, "Failed to download file: " + response.code() + ", Message: " + response.message());
+                    Log.e(TAG, "Failed to download file: " + response.code() + ", Message: " + response.message() + ", URL: " + call.request().url());
+                    String errorBody = "N/A";
+                    try {
+                        errorBody = response.errorBody() != null ? response.errorBody().string() : "No error body";
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error reading error body: " + e.getMessage());
+                    }
+                    Log.e(TAG, "Error Body: " + errorBody);
                     Toast.makeText(GradeWorkReturnsActivity.this, "Failed to download file: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Log.e(TAG, "Network error downloading file: " + t.getMessage());
+                Log.e(TAG, "Network error downloading file: " + t.getMessage() + ", URL: " + call.request().url());
                 Toast.makeText(GradeWorkReturnsActivity.this, "Network error downloading file", Toast.LENGTH_SHORT).show();
             }
         });
