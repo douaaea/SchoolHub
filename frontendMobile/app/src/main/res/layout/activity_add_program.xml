@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Spinner
+        android:id="@+id/spinnerTeacher"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        android:prompt="@string/select_teacher" />
+
+    <Spinner
+        android:id="@+id/spinnerGroup"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        android:prompt="@string/select_group" />
+
+    <Spinner
+        android:id="@+id/spinnerSubject"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        android:prompt="@string/select_subject" />
+
+    <Button
+        android:id="@+id/buttonAddProgram"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Program"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/buttonReturn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Return"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

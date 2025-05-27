@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/textStudentName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Name" />
+
+    <TextView
+        android:id="@+id/textAssignmentName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Assignment Name" />
+
+    <TextView
+        android:id="@+id/textSubjectName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Subject Name" />
+
+    <TextView
+        android:id="@+id/textGrade"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Grade" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/buttonDownload"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Download" />
+
+        <Button
+            android:id="@+id/buttonGrade"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Grade" />
+    </LinearLayout>
+</LinearLayout>

@@ -2,39 +2,38 @@ package com.example.demo.WorkReturn;
 
 import com.example.demo.Student.Student;
 import com.example.demo.Assignment.Assignment;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.LocalDateTime;
 
 @Entity
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Table(name = "work_return")
 public class WorkReturn {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonProperty("fileUrl") // Serialize filePath as fileUrl in JSON
+    @Column(name = "file_path")
     private String filePath;
+
+    @Column(name = "grade")
+    private Integer grade;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @ManyToOne
     @JoinColumn(name = "student_id")
-    @JsonIgnore
     private Student student;
 
     @ManyToOne
     @JoinColumn(name = "assignment_id")
-    @JsonIgnore
     private Assignment assignment;
 
-    public WorkReturn() {}
-
-    public WorkReturn(String filePath, Student student, Assignment assignment) {
-        this.filePath = filePath;
-        this.student = student;
-        this.assignment = assignment;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -45,12 +44,29 @@ public class WorkReturn {
         this.id = id;
     }
 
+    @JsonProperty("fileUrl")
     public String getFilePath() {
         return filePath;
     }
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public Integer getGrade() {
+        return grade;
+    }
+
+    public void setGrade(Integer grade) {
+        this.grade = grade;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Student getStudent() {

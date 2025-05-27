@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/white">
+
+    <!-- Student Info Section -->
+    <TextView
+        android:id="@+id/teacherName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Teacher Name"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#8a8a8a"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Account Settings Header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Account Settings"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- View/Edit Info Button -->
+    <Button
+        android:id="@+id/btnEditInfoTeach"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View/Edit Info"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/white"
+        android:textColor="@color/black"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/big_button_bg"
+        style="@style/Widget.AppCompat.Button.Borderless"/>
+
+    <!-- Change Password Button -->
+    <Button
+        android:id="@+id/btnChangePasswordTeach"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Change Password"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/white"
+        android:background="@drawable/big_button_bg"
+        android:textColor="@color/black"
+        style="@style/Widget.AppCompat.Button.Borderless"/>
+
+</LinearLayout>

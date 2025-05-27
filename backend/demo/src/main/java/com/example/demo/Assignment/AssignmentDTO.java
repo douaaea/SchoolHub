@@ -2,11 +2,14 @@ package com.example.demo.Assignment;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 public class AssignmentDTO {
 
     private Long id;
     private String title;
     private String description;
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime delay;
     private String status;
     private Long subjectId;

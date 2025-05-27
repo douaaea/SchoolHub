@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard_teach"
+        android:title="Dashboard"
+        android:visible="true"/>
+    <item
+        android:id="@+id/nav_profile_teach"
+        android:title="Profile"
+        android:visible="true"
+        />
+</menu>

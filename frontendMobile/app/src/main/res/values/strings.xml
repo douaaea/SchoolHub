@@ -2,4 +2,33 @@
     <string name="app_name">Navigation Drawer</string>
     <string name="open_nav">Open Navigation Drawer</string>
     <string name="close_nav">Close Navigation Drawer</string>
+    <string name="select_level" />
+
+    <string-array name="student_search_type_array">
+        <item>Name</item>
+        <item>Age</item>
+        <item>Level</item>
+        <item>Group</item>
+    </string-array>
+    <string-array name="teacher_search_type_array">
+        <item>Name</item>
+        <item>Age</item>
+    </string-array>
+    <string-array name="group_search_type_array">
+        <item>Numeric</item>
+        <item>Level</item>
+    </string-array>
+    <string-array name="grade_search_type_array">
+        <item>Subject</item>
+        <item>Description</item>
+        <item>Grade</item>
+    </string-array>
+    <string-array name="homework_search_type_array">
+        <item>Subject</item>
+        <item>Description</item>
+        <item>Due Date</item>
+    </string-array>
+    <string name="select_teacher">Select Teacher</string>
+    <string name="select_group">Select Group</string>
+    <string name="select_subject">Select Subject</string>
 </resources>

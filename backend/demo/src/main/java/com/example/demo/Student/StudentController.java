@@ -22,9 +22,6 @@ public class StudentController {
     @Autowired
     private LevelRepository levelRepository;
 
-
-
-
     // Get all students
     @GetMapping
     public List<Student> getAllStudents() {
@@ -39,52 +36,58 @@ public class StudentController {
                               .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // Get student by email (new endpoint)
+    @GetMapping("/email/{email}")
+    public ResponseEntity<Student> getStudentByEmail(@PathVariable String email) {
+        Optional<Student> optionalStudent = studentRepository.findByEmail(email);
+        return optionalStudent.map(ResponseEntity::ok)
+                              .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     // Create new student
     @PostMapping
     public ResponseEntity<Student> createStudent(@RequestBody StudentDTO dto) {
-    Optional<Group> groupOpt = groupRepository.findById(dto.groupId);
-    Optional<Level> levelOpt = levelRepository.findById(dto.levelId);
+        Optional<Group> groupOpt = groupRepository.findById(dto.groupId);
+        Optional<Level> levelOpt = levelRepository.findById(dto.levelId);
 
-    if (groupOpt.isEmpty() || levelOpt.isEmpty()) {
-        return ResponseEntity.badRequest().build();
+        if (groupOpt.isEmpty() || levelOpt.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Student student = new Student(
+            dto.email,
+            dto.password,
+            dto.firstname,
+            dto.lastname,
+            levelOpt.get(),
+            groupOpt.get()
+        );
+
+        Student savedStudent = studentRepository.save(student);
+        return ResponseEntity.ok(savedStudent);
     }
 
-    Student student = new Student(
-        dto.email,
-        dto.password,
-        dto.firstname,
-        dto.lastname,
-        levelOpt.get(),
-        groupOpt.get()
-    );
+    @PutMapping("/{id}")
+    public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody StudentDTO dto) {
+        Optional<Student> optionalStudent = studentRepository.findById(id);
+        if (optionalStudent.isPresent()) {
+            Student student = optionalStudent.get();
+            student.setEmail(dto.email);
+            student.setPassword(dto.password);
+            student.setFirstname(dto.firstname);
+            student.setLastname(dto.lastname);
 
-    Student savedStudent = studentRepository.save(student);
-    return ResponseEntity.ok(savedStudent);
+            // Get and set Group
+            groupRepository.findById(dto.groupId).ifPresent(student::setGroup);
+
+            // Get and set Level
+            levelRepository.findById(dto.levelId).ifPresent(student::setLevel);
+
+            return ResponseEntity.ok(studentRepository.save(student));
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
-
-
-  @PutMapping("/{id}")
-public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody StudentDTO dto) {
-    Optional<Student> optionalStudent = studentRepository.findById(id);
-    if (optionalStudent.isPresent()) {
-        Student student = optionalStudent.get();
-        student.setEmail(dto.email);
-        student.setPassword(dto.password);
-        student.setFirstname(dto.firstname);
-        student.setLastname(dto.lastname);
-
-        // Get and set Group
-        groupRepository.findById(dto.groupId).ifPresent(student::setGroup);
-
-        // Get and set Level
-        levelRepository.findById(dto.levelId).ifPresent(student::setLevel);
-
-        return ResponseEntity.ok(studentRepository.save(student));
-    } else {
-        return ResponseEntity.notFound().build();
-    }
-}
-
 
     // Delete student
     @DeleteMapping("/{id}")
@@ -97,7 +100,8 @@ public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody
             return ResponseEntity.notFound().build();
         }
     }
-     @GetMapping("/{studentId}/group")
+
+    @GetMapping("/{studentId}/group")
     public ResponseEntity<Map<String, Long>> getStudentGroupId(@PathVariable Long studentId) {
         Optional<Student> studentOpt = studentRepository.findById(studentId);
         if (studentOpt.isPresent()) {
