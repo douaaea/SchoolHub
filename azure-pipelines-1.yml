@@ -1,0 +1,137 @@
+# Déclenche le pipeline automatiquement lorsqu'on pousse sur la branche main
+trigger:
+  branches:
+    include:
+      - main
+# Déclenche aussi le pipeline lors des pull requests vers main
+pr:
+  branches:
+    include:
+      - main
+# Utilise un agent spécifique (ta machine locale dans ce cas)
+pool:
+  name: Default
+  demands:
+    - agent.name -equals DESKTOP-CIJ61FT
+# Déclaration de répertoires utilisés pour organiser le backend, frontend web, et mobile
+variables:
+  backendDir: 'backend'
+  frontendDir: 'frontendWeb'
+  androidDir: 'frontendMobile'
+
+stages:
+
+# --- BACKEND (Spring Boot dans /demo) ---
+- stage: Build_Backend
+  displayName: 'Build & Test Spring Boot'
+  jobs:
+    - job: backend
+      displayName: 'Backend Java 21 + Maven'
+      steps:
+          # Utilise Java version 21 pour compiler le backend
+          # Cette tâche fonctionne uniquement avec les agents hébergés par Microsoft
+          # - task: JavaToolInstaller@0
+          #   inputs:
+          #     versionSpec: '21'
+          #     jdkArchitecture: 'x64'
+          #     jdkSourceOption: 'PreInstalled'
+          #     jdkArchitectureOption: 'x64'
+ # Compile le projet Spring Boot avec Maven
+        - script: |
+            cd $(backendDir)/demo
+            chmod +x mvnw
+            ./mvnw clean install
+          displayName: 'Build backend with Maven'
+# Lance les tests unitaires, et redirige la sortie dans un fichier log
+        - script: |
+            cd $(backendDir)/demo
+            chmod +x mvnw
+            echo "Lancement des tests unitaires..."
+            ./mvnw test > test-result.log
+          displayName: 'Run backend unit tests'
+          continueOnError: true # Continue même si les tests échouent, pour qu’on puisse afficher un message personnalisé
+# Vérifie si les tests ont réussi ou échoué en analysant le fichier log
+        - script: |
+            if grep -q "\[INFO\] BUILD SUCCESS" $(backendDir)/demo/test-result.log; then
+              echo "Tests unitaires réussis pour le backend."
+            else
+              echo "Échec des tests unitaires backend. Veuillez corriger les erreurs."
+              exit 1
+            fi
+          displayName: 'Vérification du résultat des tests backend'
+
+# --- FRONTEND WEB (React + Next.js) ---
+- stage: Build_Frontend
+  displayName: 'Build & Test Frontend Web'
+  jobs:
+    - job: frontend
+      displayName: 'Frontend React'
+      steps:
+       # Installe Node.js version 18
+        - task: NodeTool@0
+          inputs:
+            versionSpec: '18.x'
+# Installe les dépendances, vérifie le code (lint), construit le projet et lance les tests unitaires React
+        - script: |
+            cd $(frontendDir)
+            npm install
+            npm run lint
+            npm run build
+            npm run test -- --watchAll=false
+          displayName: 'React: install, lint, build, test'
+
+# --- ANDROID MOBILE (Java) ---
+- stage: Build_Android
+  displayName: 'Build Android APK'
+  jobs:
+    - job: android
+      displayName: 'Android Build'
+      steps:
+      # Installe Java 17 (compatible avec Android Gradle)
+      # Cette tâche fonctionne uniquement avec les agents hébergés par Microsoft
+      # - task: JavaToolInstaller@0
+      #   inputs:
+      #     versionSpec: '17'
+      #     jdkArchitecture: 'x64'
+      #     jdkSourceOption: 'PreInstalled'
+      #     jdkArchitectureOption: 'x64'
+# Accepte les licences Android SDK (nécessaire pour compiler)
+        - script: |
+            echo "Accepting Android SDK licenses..."
+            yes | sdkmanager --licenses || true
+          displayName: 'Accept Android SDK licenses'
+# Compile l'application Android (APK de debug)
+        - script: |
+            cd $(androidDir)
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          displayName: 'Build Android APK (Debug)'
+# Publie l’APK comme un artefact téléchargeable
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: '$(androidDir)/app/build/outputs/apk/debug'
+            ArtifactName: 'AndroidAPK'
+            publishLocation: 'Container'
+          displayName: 'Publish Android APK'
+
+# --- DEPLOYMENT (Docker Compose local) ---
+- stage: Deploy_Local
+  displayName: 'Déploiement local avec Docker Compose'
+  dependsOn:
+    - Build_Backend
+    - Build_Frontend
+  condition: succeeded() # Lance cette étape seulement si le backend et le frontend ont réussi
+  jobs:
+    - job: deploy
+      displayName: 'Déploiement sur Docker Desktop'
+      steps:
+      # Stoppe les conteneurs Docker existants (évite les conflits)
+        - script: |
+            echo "Arrêt des anciens conteneurs..."
+            docker compose down || true
+          displayName: 'Arrêter les conteneurs existants'
+# Reconstruit et démarre les conteneurs avec docker-compose
+        - script: |
+            echo "Reconstruction et démarrage des conteneurs"
+            docker compose up --build -d
+          displayName: 'Lancer docker-compose'
