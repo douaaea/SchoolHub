@@ -20,12 +20,13 @@ import com.example.demo.Teacher.TeacherRepository;
 import com.example.demo.WorkReturn.WorkReturn;
 import com.example.demo.WorkReturn.WorkReturnRepository;
 import com.example.demo.Group.GroupRepository;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
-
+import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
 @EntityScan(basePackages = "com.example.demo")
@@ -34,58 +35,47 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 
- @Bean
-CommandLineRunner testEverything(LevelRepository levelRepo,
-                                 SubjectRepository subjectRepo,
-                                 TeacherRepository teacherRepo,
-                                 GroupRepository groupRepo,
-                                 ProgramRepository programRepo,
-                                 AdminRepository adminRepo,
-                                 StudentRepository studentRepo,
-                                 AssignmentRepository assignmentRepo,
-                                 GradeRepository gradeRepo,
-                                 WorkReturnRepository workReturnRepo) {
-    return args -> {
-        // 1. Create a Level
-        Level level = new Level("First Level");
-        levelRepo.save(level);
+    @Bean
+    @Profile("!test") // Ne s'exécute pas en mode test
+    CommandLineRunner testEverything(LevelRepository levelRepo,
+                                     SubjectRepository subjectRepo,
+                                     TeacherRepository teacherRepo,
+                                     GroupRepository groupRepo,
+                                     ProgramRepository programRepo,
+                                     AdminRepository adminRepo,
+                                     StudentRepository studentRepo,
+                                     AssignmentRepository assignmentRepo,
+                                     GradeRepository gradeRepo,
+                                     WorkReturnRepository workReturnRepo) {
+        return args -> {
+            Level level = new Level("First Level");
+            levelRepo.save(level);
 
-        // 2. Create a Subject and link it to the Level
-        Subject math = new Subject("Math", level);
-        subjectRepo.save(math);
+            Subject math = new Subject("Math", level);
+            subjectRepo.save(math);
 
-        // 3. Create a Teacher
-        Teacher teacher = new Teacher("teacher1@example.com", "pass123", "John", "Doe");
-        teacherRepo.save(teacher);
+            Teacher teacher = new Teacher("teacher1@example.com", "pass123", "John", "Doe");
+            teacherRepo.save(teacher);
 
-        // 4. Create a Group and link it to the Level
-        Group group = new Group("Group A", level);
-        groupRepo.save(group);
+            Group group = new Group("Group A", level);
+            groupRepo.save(group);
 
-        // 5. Create a Program (linking Teacher, Subject, Group)
-        Program program = new Program(teacher, group, math);
-        programRepo.save(program);
+            Program program = new Program(teacher, group, math);
+            programRepo.save(program);
 
-        // 6. Create an Admin
-        Admin admin = new Admin("admin@example.com", "adminpass", "Alice","Chihab", "Adminson");
-        adminRepo.save(admin);
+            Admin admin = new Admin("admin@example.com", "adminpass", "Alice","Chihab", "Adminson");
+            adminRepo.save(admin);
 
-        // 7. Create a Student
-        Student student = new Student("student@example.com", "studpass", "Jane", "Smith", level, group);
-        studentRepo.save(student);
+            Student student = new Student("student@example.com", "studpass", "Jane", "Smith", level, group);
+            studentRepo.save(student);
 
-        // 8. Create an Assignment for the Program
-        Assignment assignment = new Assignment("Assignment 1", "Solve math problems", program);
-        assignmentRepo.save(assignment);
+            Assignment assignment = new Assignment("Assignment 1", "Solve math problems", program);
+            assignmentRepo.save(assignment);
 
-        // 9. Create a Grade for the student and assignment
-        Grade grade = new Grade(95.0, student, assignment);
-        gradeRepo.save(grade);
+            Grade grade = new Grade(95.0, student, assignment);
+            gradeRepo.save(grade);
 
-      
-
-        System.out.println("✅ All entities created and saved successfully!");
-    };
-}
-
+            System.out.println("✅ All entities created and saved successfully!");
+        };
+    }
 }
