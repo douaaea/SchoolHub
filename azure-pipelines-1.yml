@@ -29,12 +29,13 @@ stages:
       displayName: 'Backend Java 21 + Maven'
       steps:
           # Utilise Java version 21 pour compiler le backend
-        - task: JavaToolInstaller@0
-          inputs:
-            versionSpec: '21'
-            jdkArchitecture: 'x64'
-            jdkSourceOption: 'PreInstalled'
-            jdkArchitectureOption: 'x64'
+          # Cette tâche fonctionne uniquement avec les agents hébergés par Microsoft
+          # - task: JavaToolInstaller@0
+          #   inputs:
+          #     versionSpec: '21'
+          #     jdkArchitecture: 'x64'
+          #     jdkSourceOption: 'PreInstalled'
+          #     jdkArchitectureOption: 'x64'
  # Compile le projet Spring Boot avec Maven
         - script: |
             cd $(backendDir)/demo
@@ -87,12 +88,13 @@ stages:
       displayName: 'Android Build'
       steps:
       # Installe Java 17 (compatible avec Android Gradle)
-        - task: JavaToolInstaller@0
-          inputs:
-            versionSpec: '17'
-            jdkArchitecture: 'x64'
-            jdkSourceOption: 'PreInstalled'
-            jdkArchitectureOption: 'x64'
+      # Cette tâche fonctionne uniquement avec les agents hébergés par Microsoft
+      # - task: JavaToolInstaller@0
+      #   inputs:
+      #     versionSpec: '17'
+      #     jdkArchitecture: 'x64'
+      #     jdkSourceOption: 'PreInstalled'
+      #     jdkArchitectureOption: 'x64'
 # Accepte les licences Android SDK (nécessaire pour compiler)
         - script: |
             echo "Accepting Android SDK licenses..."
